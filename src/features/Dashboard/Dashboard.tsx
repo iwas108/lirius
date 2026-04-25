@@ -1,15 +1,21 @@
+import { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import CreateProjectModal from './CreateProjectModal';
 
 export default function Dashboard() {
   const { projects, deleteProject, setActiveProjectId } = useAppStore();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleCreateNewProject = () => {
-    // Placeholder for actual modal to be implemented in Step 10
-    console.log('Open Create New Project Modal');
+    setIsModalOpen(true);
   };
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6">
+      <CreateProjectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <h2 className="text-2xl font-bold">Your Projects</h2>
         <button
