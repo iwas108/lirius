@@ -17,4 +17,5 @@ export interface AppState {
   createProject: (project: Omit<Project, 'id' | 'createdAt'>) => void;
   deleteProject: (id: string) => void;
   setActiveProjectId: (id: string | null) => void;
+  updateLyricTimestamp: (projectId: string, lineIndex: number, timestamp: number | null) => void;
 }
