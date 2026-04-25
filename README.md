@@ -1,73 +1,52 @@
-# React + TypeScript + Vite
+# Lirius
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Lirius is a complete web-based lyric timing synchronizer app. It helps users synchronize plain-text lyrics with `.flac` audio files, and output a valid `.srt` file.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Musixmatch-like Interface:** View a vertical list of lyrics centered on the screen, auto-scrolling with the current line.
+- **Keyboard Shortcuts:** Fast synchronization controls using keyboard arrows (Lock line, Nudge, Reset).
+- **Responsive & Dark Mode:** Designed mobile-first with smart dark/light theme options using Tailwind CSS.
+- **Local Dashboard:** Resume incomplete projects straight from your browser. Data is persisted to local storage (due to browser security constraints, you must re-select your original `.flac` file to resume).
+- **Export to SRT:** Generates a correctly formatted `.srt` file for your synchronized lyrics.
 
-## React Compiler
+## Technology Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend:** React, Vite, TypeScript
+- **Styling:** Tailwind CSS, Lucide React (Icons)
+- **State Management:** Zustand (with persist middleware)
+- **Testing:** Vitest
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+2. **Run the Development Server:**
+   ```bash
+   npm run dev
+   ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+3. **Build for Production:**
+   ```bash
+   npm run build
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4. **Lint the Code:**
+   ```bash
+   npm run lint
+   ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+5. **Run the Tests:**
+   ```bash
+   npm run test
+   ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Architectural Decisions
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **Clean Code Architecture:** Emphasizes strict separation between UI (`features/`, `components/`), State (`store/`), Audio/Shortcut Logic (`hooks/`), and Formatting (`utils/`).
+- **Data Persistence:** `zustand` combined with local storage lets the application persist project metadata and lyric progress without requiring a backend.
+- **Security Constrains Handling:** The browser cannot persistently store `.flac` files on the user's hard drive without their intervention. The app deliberately requests the file selection upon returning to an ongoing project while maintaining lyric states.
+- **TypeScript Strictness:** Project avoids `any` types by utilizing interface-driven models found in `src/types`.
