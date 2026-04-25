@@ -1,30 +1,51 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Play, Pause, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+} from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
 import AudioInput from '../../components/AudioInput';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { generateSrt } from '../../utils/srtExport';
 
 export default function Synchronizer() {
-  const { projects, activeProjectId, setActiveProjectId, updateLyricTimestamp } = useAppStore();
+  const {
+    projects,
+    activeProjectId,
+    setActiveProjectId,
+    updateLyricTimestamp,
+  } = useAppStore();
   const project = projects.find((p) => p.id === activeProjectId);
 
   const [activeLineIndex, setActiveLineIndex] = useState(0);
 
-  const { isReady, isPlaying, currentTime, loadAudio, togglePlayPause, pause } =
-    useAudioEngine({
-      onEnded: () => {
-        if (project && activeLineIndex < project.lyrics.length) {
-          alert('Audio ended but there are unsynced lines left.');
-        }
-      },
-      onTimeUpdate: () => {
-        // Find the active line based on timestamp if needed, or allow keyboard sync
-        // For now we'll stick to the manual sync as per the spec for shortcuts
-        // which we will build in step 15-16.
-        // But we will highlight the current line if it has a timestamp.
-      },
-    });
+  const {
+    isReady,
+    isPlaying,
+    currentTime,
+    duration,
+    loadAudio,
+    togglePlayPause,
+  } = useAudioEngine({
+    onEnded: () => {
+      if (project && activeLineIndex < project.lyrics.length) {
+        alert('Audio ended but there are unsynced lines left.');
+      }
+    },
+    onTimeUpdate: () => {
+      // Find the active line based on timestamp if needed, or allow keyboard sync
+      // For now we'll stick to the manual sync as per the spec for shortcuts
+      // which we will build in step 15-16.
+      // But we will highlight the current line if it has a timestamp.
+    },
+  });
 
   const lyricListRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
@@ -63,20 +84,30 @@ export default function Synchronizer() {
     // Let's modify the line at `activeLineIndex - 1` if the current line doesn't have a timestamp,
     // or the current line if it does.
     let targetIndex = activeLineIndex;
-    if (project.lyrics[activeLineIndex].timestamp === null && activeLineIndex > 0) {
+    if (
+      project.lyrics[activeLineIndex].timestamp === null &&
+      activeLineIndex > 0
+    ) {
       targetIndex = activeLineIndex - 1;
     }
 
     const currentTimestamp = project.lyrics[targetIndex].timestamp;
     if (currentTimestamp !== null) {
-      updateLyricTimestamp(project.id, targetIndex, Math.max(0, currentTimestamp - 0.1));
+      updateLyricTimestamp(
+        project.id,
+        targetIndex,
+        Math.max(0, currentTimestamp - 0.1),
+      );
     }
   };
 
   const handleArrowRight = () => {
     if (!project) return;
     let targetIndex = activeLineIndex;
-    if (project.lyrics[activeLineIndex].timestamp === null && activeLineIndex > 0) {
+    if (
+      project.lyrics[activeLineIndex].timestamp === null &&
+      activeLineIndex > 0
+    ) {
       targetIndex = activeLineIndex - 1;
     }
 
@@ -93,6 +124,31 @@ export default function Synchronizer() {
     onArrowRight: handleArrowRight,
     isActive: isReady,
   });
+
+  const handleExport = () => {
+    if (!project) return;
+
+    const hasUnsyncedLines = project.lyrics.some(
+      (line) => line.timestamp === null && line.text.trim() !== '',
+    );
+    if (hasUnsyncedLines) {
+      alert(
+        'Warning: Some lines have not been synchronized yet. They will not be included in the export.',
+      );
+    }
+
+    const srtContent = generateSrt(project.lyrics, duration);
+    const blob = new Blob([srtContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${project.name || 'lirius-export'}.srt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   // Smooth scroll active line into view
   useEffect(() => {
@@ -117,7 +173,7 @@ export default function Synchronizer() {
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">
             {project.name}
           </h1>
@@ -125,6 +181,16 @@ export default function Synchronizer() {
             {project.lyrics.length} lines total
           </p>
         </div>
+        {isReady && (
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
+            aria-label="Export SRT"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Export SRT</span>
+          </button>
+        )}
       </header>
 
       {/* Main Content Area */}
