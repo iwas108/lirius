@@ -1,122 +1,130 @@
 # Lirius Development Blueprint
 
-This document (`agents.md`) serves as the comprehensive, step-by-step blueprint for developing **Lirius**, a complete web-based lyric timing synchronizer app.
+This document (`agents.md`) serves as the comprehensive, step-by-step blueprint for developing **Lirius**, a complete web-based lyric timing synchronizer app. As an AI Agent reading this, you are to act as an expert software engineer and follow these instructions meticulously.
 
-Follow these instructions meticulously to ensure a high-quality, maintainable, and foolproof application built on FAIR principles and Clean Code Architecture.
+## Phase 1: Detailed Context & Architectural Constraints
 
-## 1. Project Overview & Requirements
+### 1.1 Project Overview
 - **Goal**: Build a web-based app for synchronizing plain-text lyrics with `.flac` audio files, outputting a valid `.srt` file.
-- **Tech Stack**: React, Vite, TypeScript, Tailwind CSS, Zustand (for state management).
+- **Tech Stack**: React, Vite, TypeScript, Tailwind CSS, Zustand.
 - **Deployment**: GitHub Pages (`https://iwas108.github.io/lirius`) via the `main` branch.
-- **Design**: Mobile-first, responsive design with smart dark/light themes.
-- **Architecture**: Clean Code Architecture, highly modularized, with clear separation of concerns (UI, State, Audio logic, File parsing).
 
-## 2. Initialization & Setup
-- Initialize the project using Vite (`npm create vite@latest lirius -- --template react-ts`).
-- Set up Tailwind CSS according to the official Vite integration guide.
-- Configure `tsconfig.json` for strict typing.
-- Set up ESLint and Prettier for strict code formatting and linting to adhere to Clean Code.
+### 1.2 Core Specifications & UX
+- **Mobile-First Design**: The UI must be fully responsive, focusing on a mobile-first approach with smart dark/light themes.
+- **Local Storage Dashboard (CRUD)**: The app manages multiple sync projects in LocalStorage. Users can Create, Read, Update, and Delete projects.
+- **Audio File Constraint**: Because of browser security constraints, we cannot permanently store `.flac` files in LocalStorage. When resuming a project, prompt the user to re-select the original `.flac` file.
+- **"Musixmatch-like" Interface**: A vertical list of lyrics centered on the screen. Highlight the active line. Show past lines dimmed, and future lines clearly. Provide smooth auto-scrolling to keep the active line centered.
 
-## 3. Theming & Tailwind Configuration
-- Configure `tailwind.config.js` to support `darkMode: 'class'` or `media`.
-- Define a color palette that ensures high contrast and accessibility (WCAG compliance) for both light and dark themes.
-- Implement a theme toggle switch in the UI that defaults to system preference but allows user overrides.
-
-## 4. Clean Code Architecture & Directory Structure
-Structure the `src` directory to enforce separation of concerns:
-- `src/components/`: Reusable UI components (Buttons, Modals, Inputs).
-- `src/features/`: Feature-specific modules (Dashboard, Synchronizer, Player).
-- `src/store/`: Zustand state management stores.
-- `src/utils/`: Pure functions for parsing, formatting time, and generating SRT.
-- `src/hooks/`: Custom React hooks (e.g., keyboard events, audio element controls).
-- `src/types/`: TypeScript interfaces and type definitions.
-
-## 5. State Management (Zustand)
-Create a global store using Zustand to manage:
-- **Projects List**: Metadata of all saved lyric projects (ID, title, last modified date).
-- **Current Project**: The currently active project being edited.
-- **Sync State**: The array of lyric lines, each containing the text and its locked timestamp.
-- **Audio State**: Current playback time, playing/paused status, and duration.
-- *Note*: Use `zustand/middleware` for `persist` to automatically save the state to LocalStorage.
-
-## 6. Project Dashboard (CRUD)
-- Implement a dashboard view where users can see a list of their projects.
-- **Create**: Input field for project name, paste plain-text lyrics.
-- **Read**: Display project name, completion percentage, and last edit time.
-- **Update**: Click a project to open it in the Synchronizer view.
-- **Delete**: Button to remove a project from LocalStorage with a confirmation modal.
-
-## 7. File Input Handling
-- Implement a robust drag-and-drop or file selection component for the `.flac` audio file.
-- **Crucial Rule**: Because of browser security, we cannot persist the `.flac` file in LocalStorage. When loading a saved project from the dashboard, prompt the user to re-select the corresponding `.flac` file to resume work.
-
-## 8. Plain-Text Lyric Parsing
-- When a user inputs plain text, parse it line-by-line.
-- Ignore or filter out completely empty lines to prevent synchronization bugs.
-- Store the parsed lyrics in the Zustand store as an array of objects: `{ id: string, text: string, timestamp: number | null }`.
-
-## 9. Audio Player Engine
-- Create a hidden `<audio>` element or utilize the Web Audio API.
-- Create custom, mobile-friendly controls: Play, Pause, Rewind (5s), Forward (5s), and a progress scrubber.
-- Sync the audio element's `currentTime` to the Zustand store using a `requestAnimationFrame` loop or `timeupdate` event for precise timing.
-
-## 10. The Synchronizer Interface
-- Design a "Musixmatch-like" interface: a vertical list of lyrics centered on the screen.
-- Highlight the "current" active line that is awaiting a timestamp.
-- Show past (locked) lines in a dimmed color and future (unlocked) lines clearly.
-- Provide smooth auto-scrolling to keep the active line centered as the user progresses.
-
-## 11. Keyboard Shortcut Engine
-Implement a robust custom hook (`useKeyboardShortcuts`) for the core syncing mechanics:
+### 1.3 Synchronization Keyboard Shortcuts
 - **`Down Arrow`**: Lock the current audio time to the active line and move focus to the next line.
 - **`Up Arrow`**: Reset the timestamp of the *previous* line, move focus back to it, and allow the user to redo the sync from that point.
 - **`Left Arrow`**: Nudge the timestamp of the currently selected/locked line backward by a fine-tune amount (e.g., -100ms).
 - **`Right Arrow`**: Nudge the timestamp of the currently selected/locked line forward by a fine-tune amount (e.g., +100ms).
 
-## 12. Auto-Save & Foolproof Mechanisms
-- Zustand `persist` handles most auto-saving, but ensure updates to lyric timestamps trigger a save immediately.
-- Prevent overlapping timestamps: A line cannot be locked with a time earlier than the preceding line. If `Down Arrow` is pressed too quickly, enforce a minimum gap (e.g., +10ms).
-- Warn the user if they attempt to export an `.srt` before all lines have a timestamp.
+### 1.4 Architecture & Coding Standards
+- **Clean Code Architecture**: Enforce strict separation of concerns (UI, State, Audio logic, File parsing).
+- **FAIR Principles**: Ensure the code is Findable, Accessible, Interoperable, and Reusable. Document code heavily using JSDoc, maintain semantic HTML, and ensure a high Lighthouse accessibility score.
+- **Error Handling**: Implement strict Error Boundaries, `try/catch` blocks, and user-friendly Toast notifications.
 
-## 13. SRT Generation Logic
-- Write a utility function in `src/utils/srtExport.ts` that converts the internal state array into standard SRT format.
-- Format requirements:
-  ```
-  1
-  00:00:00,000 --> 00:00:05,000
-  First line of lyric
-  ```
-- Calculate the end time of line `N` as slightly before the start time of line `N+1`. For the final line, use the total audio duration or a default duration (e.g., +5 seconds).
+---
 
-## 14. Export & Download Feature
-- Implement a "Download SRT" button.
-- Use `Blob` and `URL.createObjectURL` to trigger a file download directly in the browser without server interaction.
-- Name the output file intelligently based on the project title (e.g., `ProjectName_Lirius.srt`).
+## Phase 2: Actionable Execution Steps for AI Agent
 
-## 15. Mobile-First Optimization
-- Ensure the Synchronizer view is perfectly usable on small touch screens.
-- Since mobile lacks physical arrow keys, implement large, ergonomic on-screen buttons (Up, Down, Left, Right) that mimic the keyboard shortcuts.
-- Ensure the audio file selector works seamlessly with mobile file pickers.
+As an AI agent building this app, execute the following steps sequentially. After each step, verify your work using tests or UI inspection.
 
-## 16. Accessibility & FAIR Principles
-- **Findable & Accessible**: Add semantic HTML (`<main>`, `<section>`, `<nav>`). Use `aria-labels` on all iconic buttons (Play, Pause, Nudge).
-- **Interoperable & Reusable**: Output standard `.srt` format. Ensure the codebase is heavily documented using JSDoc.
-- Maintain a high Lighthouse accessibility score.
+**Step 1: Project Initialization**
+- Run `npm create vite@latest lirius -- --template react-ts`.
+- Clear out the boilerplate code in `src/App.tsx` and `src/main.tsx`.
 
-## 17. Clean Code: Error Handling
-- Wrap file parsing and audio loading in `try/catch` blocks.
-- Display user-friendly Toast notifications for errors (e.g., "Invalid file format", "Please select the audio file to resume").
-- Implement React Error Boundaries to prevent the entire app from crashing if a single component fails.
+**Step 2: Dependency Installation**
+- Install required dependencies: `tailwindcss`, `postcss`, `autoprefixer`, `zustand`, `lucide-react` (for icons).
+- Initialize Tailwind CSS configuration.
 
-## 18. Testing Strategy
-- Set up Vitest and React Testing Library.
-- Write unit tests for the core utilities (SRT formatting, time parsing).
-- Write integration tests for the Zustand store (adding a project, locking a timestamp).
+**Step 3: Tooling & Clean Code Setup**
+- Configure `tsconfig.json` for strict typing.
+- Setup ESLint and Prettier. Ensure all files pass linting before proceeding further.
 
-## 19. GitHub Pages Deployment Configuration
-- Configure `vite.config.ts` with `base: '/lirius/'` so asset paths resolve correctly on GitHub Pages.
-- Create a GitHub Actions workflow (`.github/workflows/deploy.yml`) to automatically build and deploy the React app to the `gh-pages` environment whenever code is pushed to `main`.
+**Step 4: Tailwind & Theme Configuration**
+- Configure `tailwind.config.js` with `darkMode: 'class'`.
+- Define semantic color variables in `index.css` for both light and dark modes to ensure high contrast and WCAG compliance.
 
-## 20. Documentation & Final Polish
-- Write a comprehensive `README.md` detailing how to use the app, how to run it locally, and the architectural decisions.
-- Perform a final manual QA pass, testing the keyboard shortcuts extensively to ensure zero lag between keypress and timestamp locking.
+**Step 5: Directory Structure Scaffolding**
+- Create the following folder structure in `src/`: `components/`, `features/`, `store/`, `utils/`, `hooks/`, `types/`.
+- Create a basic `Layout` component that includes a Header, Main Content area, and a Theme Toggle button.
+
+**Step 6: Define Core TypeScript Interfaces**
+- In `src/types/`, define interfaces for `Project` (metadata), `LyricLine` (id, text, timestamp), and `AppState` (Zustand store schema).
+
+**Step 7: Implement Zustand Global Store**
+- In `src/store/useAppStore.ts`, create the Zustand store with `persist` middleware.
+- Add actions for: creating a project, deleting a project, and setting the active project ID.
+
+**Step 8: Build the Dashboard UI (Projects List)**
+- Create `src/features/Dashboard/Dashboard.tsx`.
+- Implement the UI to list all saved projects from the Zustand store.
+- Add a "Create New Project" button that opens a modal.
+
+**Step 9: Implement Plain-Text Lyric Parsing**
+- Create `src/utils/lyricParser.ts`.
+- Write a function that takes plain text, splits it by newline, filters out purely empty lines, and returns an array of `LyricLine` objects. Add unit tests for this utility.
+
+**Step 10: Build the Project Creation Flow**
+- In the Create Project modal, add a form for "Project Name" and a `textarea` for pasting lyrics.
+- On submit, use `lyricParser.ts`, generate a unique Project ID, and save the project metadata to the Zustand store.
+
+**Step 11: Build the File Input Handler (.flac)**
+- Create `src/components/AudioInput.tsx`.
+- Implement a drag-and-drop or file input restricted to `audio/flac`.
+- Ensure robust error handling if the user uploads the wrong format.
+
+**Step 12: Audio Player Engine Setup**
+- Create `src/hooks/useAudioEngine.ts`.
+- Utilize the HTML `<audio>` API to manage `play`, `pause`, `currentTime`, and `duration`.
+- Sync the audio element's `currentTime` to a local React state using a `requestAnimationFrame` loop for UI performance.
+
+**Step 13: Build the Synchronizer UI Skeleton**
+- Create `src/features/Synchronizer/Synchronizer.tsx`.
+- Layout the screen: Header with Project Title, Central area for lyrics, and a Bottom bar for audio controls.
+
+**Step 14: Implement the Musixmatch-like Lyric List**
+- Render the parsed lyrics in a vertical list.
+- Apply styling based on line state: Dimmed (past/locked), Highlighted (active), Standard (future).
+- Implement a React `ref` and `useEffect` to smoothly auto-scroll the container so the active line remains vertically centered.
+
+**Step 15: Implement the Keyboard Shortcut Hook**
+- Create `src/hooks/useKeyboardShortcuts.ts`.
+- Bind event listeners for `ArrowDown`, `ArrowUp`, `ArrowLeft`, and `ArrowRight`.
+- Ensure shortcuts only fire when the Synchronizer view is active and the user is not typing in an input field.
+
+**Step 16: Connect Sync Logic to State**
+- Wire the keyboard shortcuts to Zustand actions.
+- Action: `ArrowDown` -> Lock the current audio time to the active line index and increment the active line index.
+- Action: `ArrowUp` -> Decrement the active line index and set its timestamp to `null`.
+- Action: `ArrowLeft`/`ArrowRight` -> Adjust the active line's timestamp by -100ms / +100ms.
+
+**Step 17: Implement Foolproof Sync Mechanisms**
+- Add logic to prevent overlapping timestamps (a line cannot have a timestamp earlier than the previous line + 10ms).
+- Add an auto-pause feature: if the audio reaches the end but there are unsynced lines, pause the audio and show a warning.
+
+**Step 18: Build Mobile Touch Controls**
+- In `Synchronizer.tsx`, render large, ergonomic on-screen buttons (Up, Down, Left, Right) that trigger the exact same actions as the keyboard shortcuts.
+- Hide these buttons on larger viewports using Tailwind `hidden md:block` utilities.
+
+**Step 19: SRT Generation Logic**
+- Create `src/utils/srtExport.ts`.
+- Write a function to format milliseconds into `HH:MM:SS,mmm`.
+- Generate the final `.srt` string by calculating the end time of line `N` as slightly before the start time of line `N+1`. Add unit tests.
+
+**Step 20: Export & Download Feature**
+- Add an "Export SRT" button to the Synchronizer view.
+- Hook it up to `srtExport.ts`. Provide a warning Toast if the user tries to export before all lines are synced.
+- Use `Blob` and `URL.createObjectURL` to trigger the download.
+
+**Step 21: GitHub Pages Deployment Configuration**
+- Update `vite.config.ts` to include `base: '/lirius/'`.
+- Create `.github/workflows/deploy.yml` using the standard Vite + GitHub Pages action template. Ensure it deploys from the `main` branch.
+
+**Step 22: Final QA and Documentation**
+- Add comprehensive JSDoc comments to all utilities and hooks.
+- Write a detailed `README.md` containing instructions on running the app locally and a summary of architectural decisions.
+- Perform a manual QA pass testing the resume workflow (re-selecting `.flac` and verifying state persistence).
