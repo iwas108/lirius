@@ -1,4 +1,5 @@
 import type { LyricLine } from '../types';
+import { VALID_STRUCTURE_TAGS } from './lyricParser';
 
 /**
  * Formats a time in seconds into the standard SRT format (HH:MM:SS,mmm)
@@ -34,10 +35,20 @@ export function generateSrt(
   // Filter out empty lines or lines with no text just in case, but rely mostly on the parser.
   const validLyrics = lyrics.filter((line) => line.text.trim() !== '');
 
+  // Filter out Musixmatch structure tags for SRT export
+  const exportLyrics = validLyrics.filter((line) => {
+    const trimmed = line.text.trim();
+    const isExactMatch = VALID_STRUCTURE_TAGS.includes(trimmed.toUpperCase());
+    const isLooseMatch = trimmed.match(
+      /^\[?#?(intro|verse|chorus|pre-chorus|hook|bridge|outro|instrumental)\]?$/i,
+    );
+    return !isExactMatch && !isLooseMatch;
+  });
+
   let sequenceIndex = 1;
 
-  for (let i = 0; i < validLyrics.length; i++) {
-    const currentLine = validLyrics[i];
+  for (let i = 0; i < exportLyrics.length; i++) {
+    const currentLine = exportLyrics[i];
 
     // Only process synced lines
     if (currentLine.timestamp === null) {
@@ -50,15 +61,15 @@ export function generateSrt(
     // Find the next synced line to determine end time
     let nextSyncedIndex = i + 1;
     while (
-      nextSyncedIndex < validLyrics.length &&
-      validLyrics[nextSyncedIndex].timestamp === null
+      nextSyncedIndex < exportLyrics.length &&
+      exportLyrics[nextSyncedIndex].timestamp === null
     ) {
       nextSyncedIndex++;
     }
 
-    if (nextSyncedIndex < validLyrics.length) {
+    if (nextSyncedIndex < exportLyrics.length) {
       // Calculate end time as 1ms before the start of the next line
-      endTime = (validLyrics[nextSyncedIndex].timestamp as number) - 0.001;
+      endTime = (exportLyrics[nextSyncedIndex].timestamp as number) - 0.001;
       // Ensure end time is not less than start time (just a safety check)
       if (endTime <= startTime) {
         endTime = startTime + 0.1; // fallback to +100ms
@@ -79,4 +90,18 @@ export function generateSrt(
   }
 
   return srtContent.trim();
+}
+
+/**
+ * Generates a plain text file from an array of LyricLines.
+ * Includes Musixmatch structure tags, omits all timing information.
+ * @param lyrics Array of LyricLines
+ * @returns The generated TXT file content as a string
+ */
+export function generateTxt(lyrics: LyricLine[]): string {
+  // Filter out purely empty lines to ensure clean formatting,
+  // though the user might have intentional spaces.
+  const validLyrics = lyrics.filter((line) => line.text.trim() !== '');
+
+  return validLyrics.map((line) => line.text).join('\n');
 }

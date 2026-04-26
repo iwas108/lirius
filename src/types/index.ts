@@ -22,4 +22,8 @@ export interface AppState {
     lineIndex: number,
     timestamp: number | null,
   ) => void;
+  updateProject: (
+    projectId: string,
+    projectData: Partial<Omit<Project, 'id' | 'createdAt'>>,
+  ) => void;
 }
