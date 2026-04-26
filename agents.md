@@ -37,111 +37,111 @@ This document (`agents.md`) serves as the comprehensive, step-by-step blueprint 
 
 As an AI agent building this app, execute the following steps sequentially. After each step, verify your work using tests or UI inspection.
 
-**Step 1: Project Initialization**
+**Step 1: Project Initialization (Completed)**
 - Run `npm create vite@latest lirius -- --template react-ts`.
 - Clear out the boilerplate code in `src/App.tsx` and `src/main.tsx`.
 
-**Step 2: Dependency Installation**
+**Step 2: Dependency Installation (Completed)**
 - Install required dependencies: `tailwindcss`, `postcss`, `autoprefixer`, `zustand`, `lucide-react` (for icons).
 - Initialize Tailwind CSS configuration.
 
-**Step 3: Tooling & Clean Code Setup**
+**Step 3: Tooling & Clean Code Setup (Completed)**
 - Configure `tsconfig.json` for strict typing.
 - Setup ESLint and Prettier. Ensure all files pass linting before proceeding further.
 
-**Step 4: Tailwind & Theme Configuration**
+**Step 4: Tailwind & Theme Configuration (Completed)**
 - Configure `tailwind.config.js` with `darkMode: 'class'`.
 - Define semantic color variables in `index.css` for both light and dark modes to ensure high contrast and WCAG compliance.
 - Implement theme initialization logic to follow the system default (`window.matchMedia('(prefers-color-scheme: dark)')`) initially, and remember the user's explicit choice in local storage.
 
-**Step 5: Directory Structure Scaffolding**
+**Step 5: Directory Structure Scaffolding (Completed)**
 - Create the following folder structure in `src/`: `components/`, `features/`, `store/`, `utils/`, `hooks/`, `types/`.
 - Create a basic `Layout` component that includes a Header, Main Content area, and a Theme Toggle button.
 
-**Step 6: Define Core TypeScript Interfaces**
+**Step 6: Define Core TypeScript Interfaces (Completed)**
 - In `src/types/`, define interfaces for `Project` (metadata), `LyricLine` (id, text, timestamp), and `AppState` (Zustand store schema).
 
-**Step 7: Implement Zustand Global Store**
+**Step 7: Implement Zustand Global Store (Completed)**
 - In `src/store/useAppStore.ts`, create the Zustand store with `persist` middleware.
 - Add actions for: creating a project, deleting a project, and setting the active project ID.
 - Add memory state (non-persisted) for caching the `.flac` file blob so it persists during SPA navigation.
 
-**Step 8: Build the Dashboard UI (Projects List)**
+**Step 8: Build the Dashboard UI (Projects List) (Completed)**
 - Create `src/features/Dashboard/Dashboard.tsx`.
 - Implement the UI to list all saved projects from the Zustand store.
 - Add a "Create New Project" button that opens a modal.
 
-**Step 9: Implement Plain-Text Lyric Parsing & Validation**
+**Step 9: Implement Plain-Text Lyric Parsing & Validation (Completed)**
 - Create `src/utils/lyricParser.ts`.
 - Write a function that takes plain text, splits it by newline, filters out purely empty lines, and returns an array of `LyricLine` objects. Add unit tests for this utility.
 - Add a utility function for real-time validation of Musixmatch format rules (capitalization, punctuation, slang) and an Auto Fix function to clean them up.
 
-**Step 10: Build the Smart Project Creation / Editing Flow**
+**Step 10: Build the Smart Project Creation / Editing Flow (Completed)**
 - In the Create Project (or Edit Lyric) modal, make the modal large. Add a form for "Project Name" and a `textarea` for pasting lyrics.
 - Implement real-time validation feedback, showing a list of notices or warnings about formatting issues.
 - Add an "Auto Fix" button to apply standard formatting, and buttons to quickly insert Musixmatch tags. Block malformed tags.
 - On submit, use `lyricParser.ts`, generate a unique Project ID, and save the project metadata to the Zustand store. This modal should be reusable for on-the-fly editing via an "Edit" button in the sync UI.
 
-**Step 11: Build the File Input Handler (.flac)**
+**Step 11: Build the File Input Handler (.flac) (Completed)**
 - Create `src/components/AudioInput.tsx`.
 - Implement a drag-and-drop or file input restricted to `audio/flac`.
 - Ensure robust error handling if the user uploads the wrong format.
 
-**Step 12: Audio Player Engine Setup**
+**Step 12: Audio Player Engine Setup (Completed)**
 - Create `src/hooks/useAudioEngine.ts`.
 - Utilize the HTML `<audio>` API to manage `play`, `pause`, `currentTime`, and `duration`.
 - Sync the audio element's `currentTime` to a local React state using a `requestAnimationFrame` loop for UI performance. Use the `.flac` blob cached in Zustand if available.
 
-**Step 13: Build the Synchronizer UI Skeleton**
+**Step 13: Build the Synchronizer UI Skeleton (Completed)**
 - Create `src/features/Synchronizer/Synchronizer.tsx`.
 - Layout the screen: Header with Project Title, Central area for lyrics, and a Bottom bar for audio controls and a seek bar.
 - Add a Help icon button that opens an overlay modal explaining the keyboard shortcuts.
 - Add an "Edit Lyrics" button that reopens the smart modal for on-the-fly modifications.
 
-**Step 14: Implement the Musixmatch-like Lyric List**
+**Step 14: Implement the Musixmatch-like Lyric List (Completed)**
 - Render the parsed lyrics in a vertical list. Render Musixmatch tags as distinct header dividers between lyric blocks. Ensure `#INSTRUMENTAL` includes its musical notation character.
 - Automatically insert dummy UI markers for "Start" at the beginning and "End of Lyric" at the bottom of the list.
 - Apply styling based on line state: Dimmed (past/locked), Highlighted (active, changing color and slightly increasing size), Standard (future).
 - Implement a React `ref` and `useEffect` to smoothly auto-scroll the container so the active line remains vertically centered.
 
-**Step 15: Implement the Keyboard Shortcut Hook**
+**Step 15: Implement the Keyboard Shortcut Hook (Completed)**
 - Create `src/hooks/useKeyboardShortcuts.ts`.
 - Bind event listeners for `ArrowDown`, `ArrowUp`, `ArrowLeft`, and `ArrowRight`.
 - Ensure shortcuts only fire when the Synchronizer view is active and the user is not typing in an input field.
 
-**Step 16: Connect Sync Logic to State**
+**Step 16: Connect Sync Logic to State (Completed)**
 - Wire the keyboard shortcuts to Zustand actions.
 - Action: `ArrowDown` -> Lock the current audio time to the active line index and increment the active line index.
 - Action: `ArrowUp` -> Decrement the active line index and set its timestamp to `null`.
 - Action: `ArrowLeft`/`ArrowRight` -> Adjust the active line's timestamp by -100ms / +100ms.
 
-**Step 17: Implement Foolproof Sync Mechanisms & Two-Way Seek**
+**Step 17: Implement Foolproof Sync Mechanisms & Two-Way Seek (Completed)**
 - Add logic to prevent overlapping timestamps (a line cannot have a timestamp earlier than the previous line + 10ms).
 - Add an auto-pause feature: if the audio reaches the end but there are unsynced lines, pause the audio and show a warning.
 - Bind clicking a synced lyric line to update the audio `currentTime`.
 - Bind clicking the seek bar to update the active lyric line to the closest matched timing and trigger the auto-scroll.
 - Add playback sync logic: while the audio is playing, automatically update the active line and auto-scroll to follow the song (ignoring empty lines or structure tags without timestamps).
 
-**Step 18: Build Mobile Touch Controls**
+**Step 18: Build Mobile Touch Controls (Completed)**
 - In `Synchronizer.tsx`, render large, ergonomic on-screen buttons (Up, Down, Left, Right) that trigger the exact same actions as the keyboard shortcuts.
 - Ensure these syncing buttons remain visible on both mobile and desktop views.
 
-**Step 19: Export Generation Logic (SRT & TXT)**
+**Step 19: Export Generation Logic (SRT & TXT) (Completed)**
 - Create `src/utils/exportUtils.ts`.
 - Write a function to format milliseconds into `HH:MM:SS,mmm`.
 - Generate `.srt` output: Filter out general Musixmatch structure tags but include `#INSTRUMENTAL` tags. Calculate the end time of line `N` by leaving some milliseconds spare before the start time of line `N+1` (ensure this accommodates all cases). Add unit tests.
 - Generate `.txt` output: Include all Musixmatch structure tags, omit all timing information.
 
-**Step 20: Export & Download Feature**
+**Step 20: Export & Download Feature (Completed)**
 - Add a dropdown "Export" button to the Synchronizer view with options for "Export as SRT" and "Export as TXT".
 - Hook it up to `exportUtils.ts`. Provide a warning Toast if the user tries to export before all lines are synced.
 - Use `Blob` and `URL.createObjectURL` to trigger the download with the appropriate file extension.
 
-**Step 21: GitHub Pages Deployment Configuration**
+**Step 21: GitHub Pages Deployment Configuration (Completed)**
 - Update `vite.config.ts` to include `base: '/lirius/'`.
 - Create `.github/workflows/deploy.yml` using the standard Vite + GitHub Pages action template. Ensure it deploys from the `main` branch.
 
-**Step 22: Final QA and Documentation**
+**Step 22: Final QA and Documentation (Completed)**
 - Add comprehensive JSDoc comments to all utilities and hooks.
 - Write a detailed `README.md` containing instructions on running the app locally and a summary of architectural decisions.
 - Perform a manual QA pass testing the resume workflow (re-selecting `.flac` and verifying state persistence).
