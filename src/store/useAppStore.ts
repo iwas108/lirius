@@ -7,6 +7,16 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       projects: [],
       activeProjectId: null,
+      audioFiles: {},
+
+      setAudioFile: (projectId, file) => {
+        set((state) => ({
+          audioFiles: {
+            ...state.audioFiles,
+            [projectId]: file,
+          },
+        }));
+      },
 
       createProject: (projectData) => {
         const newProject: Project = {
@@ -22,11 +32,16 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteProject: (id) => {
-        set((state) => ({
-          projects: state.projects.filter((p) => p.id !== id),
-          activeProjectId:
-            state.activeProjectId === id ? null : state.activeProjectId,
-        }));
+        set((state) => {
+          const newAudioFiles = { ...state.audioFiles };
+          delete newAudioFiles[id];
+          return {
+            projects: state.projects.filter((p) => p.id !== id),
+            activeProjectId:
+              state.activeProjectId === id ? null : state.activeProjectId,
+            audioFiles: newAudioFiles,
+          };
+        });
       },
 
       setActiveProjectId: (id) => {
@@ -62,6 +77,10 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'lirius-storage', // name of item in localStorage
+      partialize: (state) =>
+        Object.fromEntries(
+          Object.entries(state).filter(([key]) => key !== 'audioFiles'),
+        ) as AppState,
     },
   ),
 );

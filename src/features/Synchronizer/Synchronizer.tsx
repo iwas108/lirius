@@ -28,6 +28,8 @@ export default function Synchronizer() {
     activeProjectId,
     setActiveProjectId,
     updateLyricTimestamp,
+    audioFiles,
+    setAudioFile,
   } = useAppStore();
   const project = projects.find((p) => p.id === activeProjectId);
 
@@ -84,6 +86,19 @@ export default function Synchronizer() {
       seekTo(timestamp);
       setActiveLineIndex(index);
     }
+  };
+
+  useEffect(() => {
+    if (!isReady && activeProjectId && audioFiles[activeProjectId]) {
+      loadAudio(audioFiles[activeProjectId]);
+    }
+  }, [activeProjectId, audioFiles, isReady, loadAudio]);
+
+  const handleFileSelect = (file: File) => {
+    if (activeProjectId) {
+      setAudioFile(activeProjectId, file);
+    }
+    loadAudio(file);
   };
 
   const lyricListRef = useRef<HTMLDivElement>(null);
@@ -319,7 +334,7 @@ export default function Synchronizer() {
                 To resume syncing this project, please re-select the original
                 .flac audio file.
               </p>
-              <AudioInput onFileSelect={loadAudio} />
+              <AudioInput onFileSelect={handleFileSelect} />
             </div>
           </div>
         ) : (
