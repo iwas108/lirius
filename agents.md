@@ -13,9 +13,9 @@ This document (`agents.md`) serves as the comprehensive, step-by-step blueprint 
 - **Mobile-First Design**: The UI must be fully responsive, focusing on a mobile-first approach with smart dark/light themes.
 - **Local Storage Dashboard (CRUD)**: The app manages multiple sync projects in LocalStorage. Users can Create, Read, Update, and Delete projects.
 - **Audio File Constraint & Caching**: Because of browser security constraints, we cannot permanently store `.flac` files in LocalStorage. When resuming a project, prompt the user to re-select the original `.flac` file. However, while navigating between views (like Dashboard and Synchronizer) within the Single Page Application (SPA), the `.flac` file should be cached in memory (e.g., Zustand state or context) so the user does not need to re-upload it unless the page is reloaded.
-- **"Musixmatch-like" Interface**: A vertical list of lyrics centered on the screen. Highlight the active line. Show past lines dimmed, and future lines clearly. Provide smooth auto-scrolling to keep the active line centered.
+- **"Musixmatch-like" Interface**: A vertical list of lyrics centered on the screen. Highlight the active line by slightly increasing its size and changing its color to distinguish it clearly (do not make the font too large). Include dummy UI marker lines for "Start" (to mark the starting point of the synchronization) and "End of Lyric" (to mark the end of the session); users sync to these markers like normal lines. Show past lines dimmed, and future lines clearly. Provide smooth auto-scrolling to keep the active line centered.
 - **Smart Lyric Input Modal**: The lyric pasting/editing modal should be large and include real-time formatting validation based on Musixmatch guidelines (e.g., warnings for capitalization, end-line punctuation, and slang). Provide an "Auto Fix" button to correct issues automatically, and quick-insert buttons for valid structure tags (`#INTRO`, `#VERSE`, `#CHORUS`, `#PRE-CHORUS`, `#HOOK`, `#BRIDGE`, `#OUTRO`, `#INSTRUMENTAL`). Malformed tags should be blocked by the cleanup process.
-- **Musixmatch Structure Tags**: Structure tags (e.g., `#VERSE`, `#CHORUS`) should be parsed and displayed as distinct header dividers between blocks of lyrics in the Synchronizer UI, but must be excluded from the final `.srt` output.
+- **Musixmatch Structure Tags**: Structure tags (e.g., `#VERSE`, `#CHORUS`) should be parsed and displayed as distinct header dividers between blocks of lyrics in the Synchronizer UI. These tags are purely markers and are NOT assignable to a timing point, and must be excluded from the final `.srt` output. **Exception**: The `#INSTRUMENTAL` tag should automatically be filled with a musical notation character (e.g., 🎵) and *is* assignable to a timing point, and *must* be included in the `.srt` export.
 - **Seek Bar Integration**: The app must feature an interactive seek bar that is two-way synced with the lyric lines. Clicking a timestamped lyric line jumps the seek bar/audio to that exact time. Conversely, clicking the seek bar updates the active lyric to the nearest matching timestamp and smoothly scrolls it into view.
 - **Help Modal**: Display instructions for keyboard shortcuts inside a Help modal/overlay accessible via an info button on both mobile and desktop.
 - **Export Options**: Include a dropdown for export options, allowing the user to export as `.srt` (with timings, without structure tags) or as `.txt` (without timings, including Musixmatch structure tags).
@@ -52,6 +52,7 @@ As an AI agent building this app, execute the following steps sequentially. Afte
 **Step 4: Tailwind & Theme Configuration**
 - Configure `tailwind.config.js` with `darkMode: 'class'`.
 - Define semantic color variables in `index.css` for both light and dark modes to ensure high contrast and WCAG compliance.
+- Implement theme initialization logic to follow the system default (`window.matchMedia('(prefers-color-scheme: dark)')`) initially, and remember the user's explicit choice in local storage.
 
 **Step 5: Directory Structure Scaffolding**
 - Create the following folder structure in `src/`: `components/`, `features/`, `store/`, `utils/`, `hooks/`, `types/`.
@@ -98,8 +99,9 @@ As an AI agent building this app, execute the following steps sequentially. Afte
 - Add an "Edit Lyrics" button that reopens the smart modal for on-the-fly modifications.
 
 **Step 14: Implement the Musixmatch-like Lyric List**
-- Render the parsed lyrics in a vertical list. Render Musixmatch tags as distinct header dividers between lyric blocks.
-- Apply styling based on line state: Dimmed (past/locked), Highlighted (active), Standard (future).
+- Render the parsed lyrics in a vertical list. Render Musixmatch tags as distinct header dividers between lyric blocks. Ensure `#INSTRUMENTAL` includes its musical notation character.
+- Automatically insert dummy UI markers for "Start" at the beginning and "End of Lyric" at the bottom of the list.
+- Apply styling based on line state: Dimmed (past/locked), Highlighted (active, changing color and slightly increasing size), Standard (future).
 - Implement a React `ref` and `useEffect` to smoothly auto-scroll the container so the active line remains vertically centered.
 
 **Step 15: Implement the Keyboard Shortcut Hook**
@@ -118,16 +120,17 @@ As an AI agent building this app, execute the following steps sequentially. Afte
 - Add an auto-pause feature: if the audio reaches the end but there are unsynced lines, pause the audio and show a warning.
 - Bind clicking a synced lyric line to update the audio `currentTime`.
 - Bind clicking the seek bar to update the active lyric line to the closest matched timing and trigger the auto-scroll.
+- Add playback sync logic: while the audio is playing, automatically update the active line and auto-scroll to follow the song (ignoring empty lines or structure tags without timestamps).
 
 **Step 18: Build Mobile Touch Controls**
 - In `Synchronizer.tsx`, render large, ergonomic on-screen buttons (Up, Down, Left, Right) that trigger the exact same actions as the keyboard shortcuts.
-- Hide these buttons on larger viewports using Tailwind `hidden md:block` utilities.
+- Ensure these syncing buttons remain visible on both mobile and desktop views.
 
 **Step 19: Export Generation Logic (SRT & TXT)**
 - Create `src/utils/exportUtils.ts`.
 - Write a function to format milliseconds into `HH:MM:SS,mmm`.
-- Generate `.srt` output: Filter out Musixmatch structure tags, calculating the end time of line `N` as slightly before the start time of line `N+1`. Add unit tests.
-- Generate `.txt` output: Include Musixmatch structure tags, omit all timing information.
+- Generate `.srt` output: Filter out general Musixmatch structure tags but include `#INSTRUMENTAL` tags. Calculate the end time of line `N` by leaving some milliseconds spare before the start time of line `N+1` (ensure this accommodates all cases). Add unit tests.
+- Generate `.txt` output: Include all Musixmatch structure tags, omit all timing information.
 
 **Step 20: Export & Download Feature**
 - Add a dropdown "Export" button to the Synchronizer view with options for "Export as SRT" and "Export as TXT".
