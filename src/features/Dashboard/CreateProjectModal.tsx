@@ -45,13 +45,7 @@ export default function CreateProjectModal({
           setLyricsText(
             project.lyrics
               .filter((l) => l.id !== 'start-marker' && l.id !== 'end-marker')
-              .map((l) => {
-                // Strip '🎵 ' from #INSTRUMENTAL tags so they can be parsed nicely when edited
-                if (l.text === '🎵 #INSTRUMENTAL') {
-                  return '#INSTRUMENTAL';
-                }
-                return l.text;
-              })
+              .map((l) => l.text)
               .join('\n'),
           );
         }
