@@ -32,15 +32,23 @@ export function generateSrt(
 ): string {
   let srtContent = '';
 
-  // Filter out empty lines or lines with no text just in case, but rely mostly on the parser.
-  const validLyrics = lyrics.filter((line) => line.text.trim() !== '');
+  // Filter out empty lines, and also filter out dummy markers
+  const validLyrics = lyrics.filter(
+    (line) =>
+      line.text.trim() !== '' &&
+      line.id !== 'start-marker' &&
+      line.id !== 'end-marker',
+  );
 
   // Filter out Musixmatch structure tags for SRT export
+  // But INCLUDE 🎵 #INSTRUMENTAL
   const exportLyrics = validLyrics.filter((line) => {
     const trimmed = line.text.trim();
+    if (trimmed === '🎵 #INSTRUMENTAL') return true;
+
     const isExactMatch = VALID_STRUCTURE_TAGS.includes(trimmed.toUpperCase());
     const isLooseMatch = trimmed.match(
-      /^\[?#?(intro|verse|chorus|pre-chorus|hook|bridge|outro|instrumental)\]?$/i,
+      /^\[?#?(intro|verse|chorus|pre-chorus|hook|bridge|outro)\]?$/i,
     );
     return !isExactMatch && !isLooseMatch;
   });
@@ -100,8 +108,20 @@ export function generateSrt(
  */
 export function generateTxt(lyrics: LyricLine[]): string {
   // Filter out purely empty lines to ensure clean formatting,
-  // though the user might have intentional spaces.
-  const validLyrics = lyrics.filter((line) => line.text.trim() !== '');
+  // and remove start/end dummy markers
+  const validLyrics = lyrics.filter(
+    (line) =>
+      line.text.trim() !== '' &&
+      line.id !== 'start-marker' &&
+      line.id !== 'end-marker',
+  );
 
-  return validLyrics.map((line) => line.text).join('\n');
+  return validLyrics
+    .map((line) => {
+      if (line.text === '🎵 #INSTRUMENTAL') {
+        return '#INSTRUMENTAL';
+      }
+      return line.text;
+    })
+    .join('\n');
 }

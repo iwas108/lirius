@@ -21,6 +21,7 @@ import { generateSrt, generateTxt } from '../../utils/exportUtils';
 import { VALID_STRUCTURE_TAGS } from '../../utils/lyricParser';
 import HelpModal from './HelpModal';
 import CreateProjectModal from '../Dashboard/CreateProjectModal';
+import { useToastStore } from '../../store/useToastStore';
 
 export default function Synchronizer() {
   const {
@@ -38,6 +39,8 @@ export default function Synchronizer() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
+  const showToast = useToastStore((state) => state.showToast);
+
   const {
     isReady,
     isPlaying,
@@ -49,7 +52,7 @@ export default function Synchronizer() {
   } = useAudioEngine({
     onEnded: () => {
       if (project && activeLineIndex < project.lyrics.length) {
-        alert('Audio ended but there are unsynced lines left.');
+        showToast('Audio ended but there are unsynced lines left.', 'warning');
       }
     },
     onTimeUpdate: () => {
@@ -176,7 +179,7 @@ export default function Synchronizer() {
     onArrowUp: handleArrowUp,
     onArrowLeft: handleArrowLeft,
     onArrowRight: handleArrowRight,
-    isActive: isReady,
+    isActive: isReady && !isHelpOpen && !isEditModalOpen && !isExportMenuOpen,
   });
 
   const handleExport = (format: 'srt' | 'txt') => {
@@ -190,8 +193,9 @@ export default function Synchronizer() {
           !VALID_STRUCTURE_TAGS.includes(line.text.trim().toUpperCase()),
       );
       if (hasUnsyncedLines) {
-        alert(
+        showToast(
           'Warning: Some lyric lines have not been synchronized yet. They will not be included in the SRT export.',
+          'warning',
         );
       }
     }
@@ -345,9 +349,10 @@ export default function Synchronizer() {
             <div className="max-w-3xl mx-auto space-y-8">
               {project.lyrics.map((line, index) => {
                 const isActive = index === activeLineIndex;
-                const isStructureTag = VALID_STRUCTURE_TAGS.includes(
-                  line.text.trim().toUpperCase(),
-                );
+                const isStructureTag =
+                  VALID_STRUCTURE_TAGS.includes(
+                    line.text.trim().toUpperCase(),
+                  ) && line.text.trim() !== '🎵 #INSTRUMENTAL';
 
                 if (isStructureTag) {
                   return (
@@ -398,8 +403,8 @@ export default function Synchronizer() {
       {/* Bottom Bar Controls */}
       {isReady && (
         <footer className="shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.2)] z-10">
-          {/* Mobile Touch Controls */}
-          <div className="md:hidden flex justify-center gap-4 mb-4">
+          {/* Touch Controls (Mobile & Desktop) */}
+          <div className="flex justify-center gap-4 mb-4">
             <button
               onClick={handleArrowUp}
               className="p-3 bg-gray-200 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300 active:bg-gray-300 dark:active:bg-gray-700"

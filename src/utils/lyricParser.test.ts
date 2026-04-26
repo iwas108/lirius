@@ -4,38 +4,48 @@ import { parseLyrics, validateLyrics, autoFixLyrics } from './lyricParser';
 describe('parseLyrics', () => {
   it('should return an empty array for empty input', () => {
     expect(parseLyrics('')).toEqual([]);
-    expect(parseLyrics('   ')).toEqual([]);
-    expect(parseLyrics('\n\n\n')).toEqual([]);
+
+    const resultSpaces = parseLyrics('   ');
+    expect(resultSpaces).toHaveLength(2);
+    expect(resultSpaces[0].id).toBe('start-marker');
+    expect(resultSpaces[1].id).toBe('end-marker');
+
+    const resultNewlines = parseLyrics('\n\n\n');
+    expect(resultNewlines).toHaveLength(2);
+    expect(resultNewlines[0].id).toBe('start-marker');
+    expect(resultNewlines[1].id).toBe('end-marker');
   });
 
   it('should parse simple lines correctly', () => {
     const input = 'Line 1\nLine 2\nLine 3';
     const result = parseLyrics(input);
 
-    expect(result).toHaveLength(3);
-    expect(result[0].text).toBe('Line 1');
-    expect(result[0].timestamp).toBeNull();
-    expect(result[0].id).toBeDefined();
+    expect(result).toHaveLength(5);
+    expect(result[0].text).toBe('Start');
+    expect(result[1].text).toBe('Line 1');
+    expect(result[1].timestamp).toBeNull();
+    expect(result[1].id).toBeDefined();
 
-    expect(result[1].text).toBe('Line 2');
-    expect(result[2].text).toBe('Line 3');
+    expect(result[2].text).toBe('Line 2');
+    expect(result[3].text).toBe('Line 3');
+    expect(result[4].text).toBe('End of Lyric');
   });
 
   it('should trim whitespace and ignore empty lines', () => {
     const input = '  Line 1  \n\n  \nLine 2\n \t \nLine 3\n';
     const result = parseLyrics(input);
 
-    expect(result).toHaveLength(3);
-    expect(result[0].text).toBe('Line 1');
-    expect(result[1].text).toBe('Line 2');
-    expect(result[2].text).toBe('Line 3');
+    expect(result).toHaveLength(5);
+    expect(result[1].text).toBe('Line 1');
+    expect(result[2].text).toBe('Line 2');
+    expect(result[3].text).toBe('Line 3');
   });
 
   it('should generate unique IDs for each line', () => {
     const input = 'Line 1\nLine 2';
     const result = parseLyrics(input);
 
-    expect(result[0].id).not.toBe(result[1].id);
+    expect(result[1].id).not.toBe(result[2].id);
   });
 });
 
