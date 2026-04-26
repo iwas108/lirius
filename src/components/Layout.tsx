@@ -1,14 +1,26 @@
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import Toast from './Toast';
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('lirius-theme');
+      if (savedTheme) {
+        return savedTheme === 'dark';
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
 
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('lirius-theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('lirius-theme', 'light');
     }
   }, [darkMode]);
 
@@ -24,6 +36,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         </button>
       </header>
       <main className="p-4">{children}</main>
+      <Toast />
     </div>
   );
 }

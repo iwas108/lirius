@@ -42,7 +42,18 @@ export default function CreateProjectModal({
           // eslint-disable-next-line react-hooks/set-state-in-effect
           setProjectName(project.name);
 
-          setLyricsText(project.lyrics.map((l) => l.text).join('\n'));
+          setLyricsText(
+            project.lyrics
+              .filter((l) => l.id !== 'start-marker' && l.id !== 'end-marker')
+              .map((l) => {
+                // Strip '🎵 ' from #INSTRUMENTAL tags so they can be parsed nicely when edited
+                if (l.text === '🎵 #INSTRUMENTAL') {
+                  return '#INSTRUMENTAL';
+                }
+                return l.text;
+              })
+              .join('\n'),
+          );
         }
       } else {
         setProjectName('');
@@ -102,9 +113,27 @@ export default function CreateProjectModal({
       if (existingProject) {
         // Try to preserve timestamps for lines that didn't change
         const mergedLyrics = parsedLyrics.map((newLine) => {
-          // Find a matching line in the existing project (same text)
+          // Find a matching line in the existing project
+          // Note: If text changes drastically, it loses timestamp.
+          // Special handle for start-marker and end-marker.
+          if (newLine.id === 'start-marker' || newLine.id === 'end-marker') {
+            const markerMatch = existingProject.lyrics.find(
+              (oldLine) => oldLine.id === newLine.id,
+            );
+            if (markerMatch) {
+              return {
+                ...newLine,
+                timestamp: markerMatch.timestamp,
+              };
+            }
+            return newLine;
+          }
+
           const match = existingProject.lyrics.find(
-            (oldLine) => oldLine.text === newLine.text,
+            (oldLine) =>
+              oldLine.text === newLine.text &&
+              oldLine.id !== 'start-marker' &&
+              oldLine.id !== 'end-marker',
           );
           if (match) {
             return {

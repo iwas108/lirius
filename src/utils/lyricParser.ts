@@ -13,16 +13,34 @@ export function parseLyrics(text: string): LyricLine[] {
   const lines = text.split('\n');
   const result: LyricLine[] = [];
 
+  // Add dummy Start marker
+  result.push({
+    id: 'start-marker',
+    text: 'Start',
+    timestamp: null,
+  });
+
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed.length > 0) {
+      // Step 14 & 19: #INSTRUMENTAL format to "🎵 #INSTRUMENTAL"
+      const isInstrumental = trimmed.match(/^\[?#?instrumental\]?$/i);
+      const displayText = isInstrumental ? '🎵 #INSTRUMENTAL' : trimmed;
+
       result.push({
         id: crypto.randomUUID(),
-        text: trimmed,
+        text: displayText,
         timestamp: null,
       });
     }
   }
+
+  // Add dummy End marker
+  result.push({
+    id: 'end-marker',
+    text: 'End of Lyric',
+    timestamp: null,
+  });
 
   return result;
 }
