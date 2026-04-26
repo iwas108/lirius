@@ -14,7 +14,9 @@ export interface Project {
 export interface AppState {
   projects: Project[];
   activeProjectId: string | null;
+  audioFiles: Record<string, File>;
   createProject: (project: Omit<Project, 'id' | 'createdAt'>) => void;
+  setAudioFile: (projectId: string, file: File) => void;
   deleteProject: (id: string) => void;
   setActiveProjectId: (id: string | null) => void;
   updateLyricTimestamp: (
