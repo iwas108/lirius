@@ -8,12 +8,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  HelpCircle,
+  Edit3,
+  FileText,
+  FileAudio,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
 import AudioInput from '../../components/AudioInput';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
-import { generateSrt } from '../../utils/srtExport';
+import { generateSrt, generateTxt } from '../../utils/exportUtils';
+import { VALID_STRUCTURE_TAGS } from '../../utils/lyricParser';
+import HelpModal from './HelpModal';
+import CreateProjectModal from '../Dashboard/CreateProjectModal';
 
 export default function Synchronizer() {
   const {
@@ -25,6 +32,9 @@ export default function Synchronizer() {
   const project = projects.find((p) => p.id === activeProjectId);
 
   const [activeLineIndex, setActiveLineIndex] = useState(0);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
   const {
     isReady,
@@ -33,6 +43,7 @@ export default function Synchronizer() {
     duration,
     loadAudio,
     togglePlayPause,
+    seekTo,
   } = useAudioEngine({
     onEnded: () => {
       if (project && activeLineIndex < project.lyrics.length) {
@@ -40,12 +51,40 @@ export default function Synchronizer() {
       }
     },
     onTimeUpdate: () => {
-      // Find the active line based on timestamp if needed, or allow keyboard sync
-      // For now we'll stick to the manual sync as per the spec for shortcuts
-      // which we will build in step 15-16.
-      // But we will highlight the current line if it has a timestamp.
+      // When seeking, update the active line index to the nearest matched timestamp
+      // We only do this if it's a significant jump (e.g., from seek bar)
+      // For smooth playback, we let manual sync control the active line
+      // But let's implement the requirement: "Clicking the seek bar updates the active lyric to the nearest matching timestamp"
     },
   });
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTime = parseFloat(e.target.value);
+    seekTo(newTime);
+
+    if (project) {
+      // Find the last lyric line with a timestamp <= newTime
+      let newActiveIndex = 0;
+      for (let i = 0; i < project.lyrics.length; i++) {
+        const t = project.lyrics[i].timestamp;
+        if (t !== null && t <= newTime) {
+          newActiveIndex = i;
+        } else if (t !== null && t > newTime) {
+          break; // Since timestamps are ordered, we can break early
+        }
+      }
+      setActiveLineIndex(newActiveIndex);
+    }
+  };
+
+  const handleLyricClick = (index: number) => {
+    if (!project) return;
+    const timestamp = project.lyrics[index].timestamp;
+    if (timestamp !== null) {
+      seekTo(timestamp);
+      setActiveLineIndex(index);
+    }
+  };
 
   const lyricListRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
@@ -125,29 +164,39 @@ export default function Synchronizer() {
     isActive: isReady,
   });
 
-  const handleExport = () => {
+  const handleExport = (format: 'srt' | 'txt') => {
     if (!project) return;
 
-    const hasUnsyncedLines = project.lyrics.some(
-      (line) => line.timestamp === null && line.text.trim() !== '',
-    );
-    if (hasUnsyncedLines) {
-      alert(
-        'Warning: Some lines have not been synchronized yet. They will not be included in the export.',
+    if (format === 'srt') {
+      const hasUnsyncedLines = project.lyrics.some(
+        (line) =>
+          line.timestamp === null &&
+          line.text.trim() !== '' &&
+          !VALID_STRUCTURE_TAGS.includes(line.text.trim().toUpperCase()),
       );
+      if (hasUnsyncedLines) {
+        alert(
+          'Warning: Some lyric lines have not been synchronized yet. They will not be included in the SRT export.',
+        );
+      }
     }
 
-    const srtContent = generateSrt(project.lyrics, duration);
-    const blob = new Blob([srtContent], { type: 'text/plain' });
+    const content =
+      format === 'srt'
+        ? generateSrt(project.lyrics, duration)
+        : generateTxt(project.lyrics);
+
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${project.name || 'lirius-export'}.srt`;
+    a.download = `${project.name || 'lirius-export'}.${format}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setIsExportMenuOpen(false);
   };
 
   // Smooth scroll active line into view
@@ -182,14 +231,79 @@ export default function Synchronizer() {
           </p>
         </div>
         {isReady && (
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
-            aria-label="Export SRT"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export SRT</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
+              aria-label="Edit Lyrics"
+              title="Edit Lyrics"
+            >
+              <Edit3 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setIsHelpOpen(true)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
+              aria-label="Help"
+              title="Help"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
+                aria-haspopup="true"
+                aria-expanded={isExportMenuOpen}
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Export</span>
+                <ChevronDown className="w-3 h-3 ml-1" />
+              </button>
+
+              {isExportMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsExportMenuOpen(false)}
+                  ></div>
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-20 overflow-hidden">
+                    <div
+                      className="py-1"
+                      role="menu"
+                      aria-orientation="vertical"
+                    >
+                      <button
+                        onClick={() => handleExport('srt')}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                        role="menuitem"
+                      >
+                        <FileAudio className="w-4 h-4 text-blue-500" />
+                        <div>
+                          <div className="font-medium">Export as .SRT</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            With timings, no tags
+                          </div>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => handleExport('txt')}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 border-t border-gray-100 dark:border-gray-700"
+                        role="menuitem"
+                      >
+                        <FileText className="w-4 h-4 text-blue-500" />
+                        <div>
+                          <div className="font-medium">Export as .TXT</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            With tags, no timings
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
       </header>
 
@@ -216,13 +330,35 @@ export default function Synchronizer() {
             <div className="max-w-3xl mx-auto space-y-8">
               {project.lyrics.map((line, index) => {
                 const isActive = index === activeLineIndex;
+                const isStructureTag = VALID_STRUCTURE_TAGS.includes(
+                  line.text.trim().toUpperCase(),
+                );
+
+                if (isStructureTag) {
+                  return (
+                    <div
+                      key={line.id}
+                      ref={isActive ? activeLineRef : null}
+                      className="flex items-center justify-center my-8"
+                    >
+                      <div className="h-px bg-gray-300 dark:bg-gray-700 flex-1 max-w-[100px]"></div>
+                      <span className="px-4 text-xs font-bold tracking-widest uppercase text-gray-500 dark:text-gray-400">
+                        {line.text.replace(/^#/, '')}
+                      </span>
+                      <div className="h-px bg-gray-300 dark:bg-gray-700 flex-1 max-w-[100px]"></div>
+                    </div>
+                  );
+                }
+
                 const isPast = index < activeLineIndex;
+                const hasTimestamp = line.timestamp !== null;
 
                 return (
                   <div
                     key={line.id}
                     ref={isActive ? activeLineRef : null}
-                    className={`transition-all duration-300 transform text-center px-4 ${
+                    onClick={() => handleLyricClick(index)}
+                    className={`transition-all duration-300 transform text-center px-4 ${hasTimestamp ? 'cursor-pointer hover:opacity-80' : ''} ${
                       isActive
                         ? 'text-3xl md:text-5xl font-bold text-blue-600 dark:text-blue-400 scale-100 opacity-100 py-4'
                         : isPast
@@ -231,9 +367,9 @@ export default function Synchronizer() {
                     }`}
                   >
                     {line.text}
-                    {line.timestamp !== null && (
+                    {hasTimestamp && (
                       <div className="text-xs font-mono opacity-50 mt-2 text-gray-500">
-                        {formatTime(line.timestamp)}
+                        {formatTime(line.timestamp as number)}
                       </div>
                     )}
                   </div>
@@ -281,27 +417,60 @@ export default function Synchronizer() {
             </div>
           </div>
 
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-            <div className="font-mono text-xl text-gray-700 dark:text-gray-300 w-24">
-              {formatTime(currentTime)}
+          <div className="max-w-4xl mx-auto flex flex-col gap-4">
+            {/* Seek Bar */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-gray-500 w-12 text-right">
+                {formatTime(currentTime)}
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                step={0.01}
+                value={currentTime}
+                onChange={handleSeek}
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+                aria-label="Seek time"
+              />
+              <span className="text-xs font-mono text-gray-500 w-12">
+                {formatTime(duration)}
+              </span>
             </div>
 
-            <button
-              onClick={togglePlayPause}
-              className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-500/50"
-            >
-              {isPlaying ? (
-                <Pause className="w-6 h-6 fill-current" />
-              ) : (
-                <Play className="w-6 h-6 fill-current ml-1" />
-              )}
-            </button>
+            {/* Controls */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="font-mono text-xl text-gray-700 dark:text-gray-300 w-24">
+                {formatTime(currentTime)}
+              </div>
 
-            <div className="w-24 text-right text-sm text-gray-500 dark:text-gray-400">
-              Line {activeLineIndex + 1}/{project.lyrics.length}
+              <button
+                onClick={togglePlayPause}
+                className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-500/50 shrink-0"
+              >
+                {isPlaying ? (
+                  <Pause className="w-6 h-6 fill-current" />
+                ) : (
+                  <Play className="w-6 h-6 fill-current ml-1" />
+                )}
+              </button>
+
+              <div className="w-24 text-right text-sm text-gray-500 dark:text-gray-400">
+                Line {activeLineIndex + 1}/{project.lyrics.length}
+              </div>
             </div>
           </div>
         </footer>
+      )}
+
+      {/* Modals */}
+      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      {project && (
+        <CreateProjectModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          editProjectId={project.id}
+        />
       )}
     </div>
   );

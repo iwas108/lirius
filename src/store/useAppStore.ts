@@ -51,6 +51,14 @@ export const useAppStore = create<AppState>()(
           }),
         }));
       },
+
+      updateProject: (projectId, projectData) => {
+        set((state) => ({
+          projects: state.projects.map((project) =>
+            project.id === projectId ? { ...project, ...projectData } : project,
+          ),
+        }));
+      },
     }),
     {
       name: 'lirius-storage', // name of item in localStorage

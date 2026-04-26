@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { formatTimeSrt, generateSrt } from './srtExport';
+import { formatTimeSrt, generateSrt, generateTxt } from './exportUtils';
 import type { LyricLine } from '../types';
 
-describe('srtExport', () => {
+describe('exportUtils', () => {
   describe('formatTimeSrt', () => {
     it('should format zero correctly', () => {
       expect(formatTimeSrt(0)).toBe('00:00:00,000');
@@ -70,6 +70,57 @@ Third line`;
 First line`;
 
       expect(generateSrt(lyrics, 4)).toBe(expectedSrt);
+    });
+
+    it('should omit structure tags', () => {
+      const lyrics: LyricLine[] = [
+        { id: '1', text: '#CHORUS', timestamp: 1.0 },
+        { id: '2', text: 'First line', timestamp: 3.0 },
+      ];
+
+      // Audio duration is 5.0, so the last line should end at 5.0
+      const expectedSrt = `1
+00:00:03,000 --> 00:00:05,000
+First line`;
+
+      expect(generateSrt(lyrics, 5)).toBe(expectedSrt);
+    });
+
+    it('should omit un-fixed loose structure tags', () => {
+      const lyrics: LyricLine[] = [
+        { id: '1', text: '[Chorus]', timestamp: 1.0 },
+        { id: '2', text: 'First line', timestamp: 3.0 },
+        { id: '3', text: 'intro', timestamp: 4.0 },
+        { id: '4', text: 'Second line', timestamp: 5.0 },
+      ];
+
+      // It should skip lines 1 and 3
+      const expectedSrt = `1
+00:00:03,000 --> 00:00:04,999
+First line
+
+2
+00:00:05,000 --> 00:00:07,000
+Second line`;
+
+      expect(generateSrt(lyrics, 7)).toBe(expectedSrt);
+    });
+  });
+
+  describe('generateTxt', () => {
+    it('should generate empty string for empty lyrics', () => {
+      expect(generateTxt([])).toBe('');
+    });
+
+    it('should include structure tags and omit timings', () => {
+      const lyrics: LyricLine[] = [
+        { id: '1', text: '#CHORUS', timestamp: 1.0 },
+        { id: '2', text: 'First line', timestamp: 3.0 },
+      ];
+
+      const expectedTxt = `#CHORUS\nFirst line`;
+
+      expect(generateTxt(lyrics)).toBe(expectedTxt);
     });
   });
 });
