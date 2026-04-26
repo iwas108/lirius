@@ -78,10 +78,7 @@ export default function Synchronizer() {
 
     if (project) {
       // Find the last lyric line with a timestamp <= newTime
-      let newActiveIndex = project.lyrics.findIndex((_, idx) =>
-        isLineSyncable(idx),
-      );
-      if (newActiveIndex === -1) newActiveIndex = 0; // fallback just in case
+      let newActiveIndex = 0; // Default to start-marker
 
       for (let i = 0; i < project.lyrics.length; i++) {
         if (!isLineSyncable(i)) continue;
@@ -111,24 +108,6 @@ export default function Synchronizer() {
     }
   }, [activeProjectId, audioFiles, isReady, loadAudio]);
 
-  // Handle active line index initialization where the initial start-marker shouldn't be active
-  useEffect(() => {
-    if (!project) return;
-    if (activeLineIndex === 0 && !isLineSyncable(0)) {
-      for (let i = 0; i < project.lyrics.length; i++) {
-        if (isLineSyncable(i)) {
-          // Initialize active index outside of render by using a short timeout to break synchronously cascading issue
-          // which is caught by eslint react-hooks/set-state-in-effect
-          setTimeout(() => {
-            setActiveLineIndex(i);
-          }, 0);
-          break;
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project?.id]);
-
   const handleFileSelect = (file: File) => {
     if (activeProjectId) {
       setAudioFile(activeProjectId, file);
@@ -142,6 +121,22 @@ export default function Synchronizer() {
   // Keyboard Shortcuts Logic
   const handleArrowDown = () => {
     if (!project || activeLineIndex >= project.lyrics.length) return;
+
+    const currentLine = project.lyrics[activeLineIndex];
+    if (currentLine.id === 'end-marker') return;
+
+    if (currentLine.id === 'start-marker') {
+      // Find the first syncable line and jump to it without setting a timestamp
+      let nextIndex = activeLineIndex + 1;
+      while (nextIndex < project.lyrics.length && !isLineSyncable(nextIndex)) {
+        nextIndex++;
+      }
+      if (nextIndex < project.lyrics.length) {
+        setActiveLineIndex(nextIndex);
+      }
+      return;
+    }
+
     if (!isLineSyncable(activeLineIndex)) return;
 
     // Determine the minimum allowed timestamp (previous line's timestamp + 10ms)
@@ -161,11 +156,18 @@ export default function Synchronizer() {
     const lockedTime = Math.max(currentTime, minTimestamp);
     updateLyricTimestamp(project.id, activeLineIndex, lockedTime);
 
-    // Find next syncable index
+    // Find next syncable index or the end marker
     let nextIndex = activeLineIndex + 1;
-    while (nextIndex < project.lyrics.length && !isLineSyncable(nextIndex)) {
+    while (nextIndex < project.lyrics.length) {
+      if (
+        isLineSyncable(nextIndex) ||
+        project.lyrics[nextIndex].id === 'end-marker'
+      ) {
+        break;
+      }
       nextIndex++;
     }
+
     if (nextIndex < project.lyrics.length) {
       setActiveLineIndex(nextIndex);
     }
@@ -175,12 +177,28 @@ export default function Synchronizer() {
     if (!project || activeLineIndex <= 0) return;
 
     let prevIndex = activeLineIndex - 1;
-    while (prevIndex >= 0 && !isLineSyncable(prevIndex)) {
+    while (prevIndex >= 0) {
+      if (
+        isLineSyncable(prevIndex) ||
+        project.lyrics[prevIndex].id === 'start-marker'
+      ) {
+        break;
+      }
       prevIndex--;
     }
 
     if (prevIndex >= 0) {
-      updateLyricTimestamp(project.id, prevIndex, null);
+      // If we go back to a syncable line, clear its timestamp
+      if (isLineSyncable(prevIndex)) {
+        updateLyricTimestamp(project.id, prevIndex, null);
+      } else if (project.lyrics[activeLineIndex].id === 'end-marker') {
+        // If we were at end marker, and moved back, activeLineIndex was end-marker
+        // we move to the last syncable line which is prevIndex, and we should clear it
+        // Wait, if prevIndex is a syncable line, it's cleared above.
+        // If we move back from the FIRST syncable line, prevIndex is start-marker.
+        // We just move to it, start-marker has no timestamp to clear.
+      }
+
       setActiveLineIndex(prevIndex);
     }
   };
