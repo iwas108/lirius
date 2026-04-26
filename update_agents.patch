@@ -1,0 +1,11 @@
+--- agents.md
++++ agents.md
+@@ -73,7 +73,7 @@
+ - Render the parsed lyrics in a vertical list. Render Musixmatch tags as distinct header dividers between lyric blocks. Ensure `#INSTRUMENTAL` includes its musical notation character.
+ - Automatically insert dummy UI markers for "Start" at the beginning and "End of Lyric" at the bottom of the list.
+ - Apply styling based on line state: Dimmed (past/locked), Highlighted (active, changing color and slightly increasing size), Standard (future).
+-- Implement a React `ref` and `useEffect` to smoothly auto-scroll the container so the active line remains vertically centered.
++- Implement a React `ref` and `useEffect` to smoothly auto-scroll the container so the active line remains vertically centered. Only actual lyric lines can contain timing points; dummy markers and structural tags (e.g., #VERSE) are strictly unsyncable.
+
+ **Step 15: Implement the Keyboard Shortcut Hook (Completed)**
+ - Create `src/hooks/useKeyboardShortcuts.ts`.
