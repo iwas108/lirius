@@ -41,14 +41,12 @@ export function generateSrt(
   );
 
   // Filter out Musixmatch structure tags for SRT export
-  // But INCLUDE 🎵 #INSTRUMENTAL
   const exportLyrics = validLyrics.filter((line) => {
     const trimmed = line.text.trim();
-    if (trimmed === '🎵 #INSTRUMENTAL') return true;
 
     const isExactMatch = VALID_STRUCTURE_TAGS.includes(trimmed.toUpperCase());
     const isLooseMatch = trimmed.match(
-      /^\[?#?(intro|verse|chorus|pre-chorus|hook|bridge|outro)\]?$/i,
+      /^\[?#?(intro|verse|chorus|pre-chorus|hook|bridge|outro|instrumental)\]?$/i,
     );
     return !isExactMatch && !isLooseMatch;
   });
@@ -116,12 +114,5 @@ export function generateTxt(lyrics: LyricLine[]): string {
       line.id !== 'end-marker',
   );
 
-  return validLyrics
-    .map((line) => {
-      if (line.text === '🎵 #INSTRUMENTAL') {
-        return '#INSTRUMENTAL';
-      }
-      return line.text;
-    })
-    .join('\n');
+  return validLyrics.map((line) => line.text).join('\n');
 }

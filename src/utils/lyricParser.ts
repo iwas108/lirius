@@ -20,18 +20,45 @@ export function parseLyrics(text: string): LyricLine[] {
     timestamp: null,
   });
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmed = line.trim();
     if (trimmed.length > 0) {
-      // Step 14 & 19: #INSTRUMENTAL format to "🎵 #INSTRUMENTAL"
       const isInstrumental = trimmed.match(/^\[?#?instrumental\]?$/i);
-      const displayText = isInstrumental ? '🎵 #INSTRUMENTAL' : trimmed;
 
-      result.push({
-        id: crypto.randomUUID(),
-        text: displayText,
-        timestamp: null,
-      });
+      if (isInstrumental) {
+        result.push({
+          id: crypto.randomUUID(),
+          text: '#INSTRUMENTAL',
+          timestamp: null,
+        });
+
+        // Check if the next non-empty line is already '🎵'
+        let hasMusicNoteNext = false;
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextTrimmed = lines[j].trim();
+          if (nextTrimmed.length > 0) {
+            if (nextTrimmed === '🎵') {
+              hasMusicNoteNext = true;
+            }
+            break;
+          }
+        }
+
+        if (!hasMusicNoteNext) {
+          result.push({
+            id: crypto.randomUUID(),
+            text: '🎵',
+            timestamp: null,
+          });
+        }
+      } else {
+        result.push({
+          id: crypto.randomUUID(),
+          text: trimmed,
+          timestamp: null,
+        });
+      }
     }
   }
 
