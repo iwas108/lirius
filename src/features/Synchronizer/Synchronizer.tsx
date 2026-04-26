@@ -41,6 +41,15 @@ export default function Synchronizer() {
 
   const showToast = useToastStore((state) => state.showToast);
 
+  const isLineSyncable = (lineIndex: number) => {
+    if (!project || lineIndex < 0 || lineIndex >= project.lyrics.length)
+      return false;
+    const line = project.lyrics[lineIndex];
+    if (line.id === 'start-marker' || line.id === 'end-marker') return false;
+    const trimmedUpper = line.text.trim().toUpperCase();
+    return !VALID_STRUCTURE_TAGS.includes(trimmedUpper);
+  };
+
   const {
     isReady,
     isPlaying,
@@ -55,22 +64,28 @@ export default function Synchronizer() {
         showToast('Audio ended but there are unsynced lines left.', 'warning');
       }
     },
-    onTimeUpdate: () => {
-      // When seeking, update the active line index to the nearest matched timestamp
-      // We only do this if it's a significant jump (e.g., from seek bar)
-      // For smooth playback, we let manual sync control the active line
-      // But let's implement the requirement: "Clicking the seek bar updates the active lyric to the nearest matching timestamp"
+    onTimeUpdate: (newTime: number) => {
+      if (!project || !isPlaying) return;
+
+      // Auto-scroll following the song while playing
+      let newActiveIndex = -1;
+
+      // Find the last syncable line with a timestamp <= current time
+      for (let i = 0; i < project.lyrics.length; i++) {
+        if (!isLineSyncable(i)) continue;
+        const t = project.lyrics[i].timestamp;
+        if (t !== null && t <= newTime) {
+          newActiveIndex = i;
+        } else if (t !== null && t > newTime) {
+          break;
+        }
+      }
+
+      if (newActiveIndex !== -1 && newActiveIndex !== activeLineIndex) {
+        setActiveLineIndex(newActiveIndex);
+      }
     },
   });
-
-  const isLineSyncable = (lineIndex: number) => {
-    if (!project || lineIndex < 0 || lineIndex >= project.lyrics.length)
-      return false;
-    const line = project.lyrics[lineIndex];
-    if (line.id === 'start-marker' || line.id === 'end-marker') return false;
-    const trimmedUpper = line.text.trim().toUpperCase();
-    return !VALID_STRUCTURE_TAGS.includes(trimmedUpper);
-  };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTime = parseFloat(e.target.value);
@@ -125,37 +140,6 @@ export default function Synchronizer() {
     const currentLine = project.lyrics[activeLineIndex];
     if (currentLine.id === 'end-marker') return;
 
-    if (currentLine.id === 'start-marker') {
-      // Find the first syncable line and jump to it without setting a timestamp
-      let nextIndex = activeLineIndex + 1;
-      while (nextIndex < project.lyrics.length && !isLineSyncable(nextIndex)) {
-        nextIndex++;
-      }
-      if (nextIndex < project.lyrics.length) {
-        setActiveLineIndex(nextIndex);
-      }
-      return;
-    }
-
-    if (!isLineSyncable(activeLineIndex)) return;
-
-    // Determine the minimum allowed timestamp (previous line's timestamp + 10ms)
-    let minTimestamp = 0;
-
-    // Find the previous syncable line
-    for (let i = activeLineIndex - 1; i >= 0; i--) {
-      if (isLineSyncable(i)) {
-        const prevTimestamp = project.lyrics[i].timestamp;
-        if (prevTimestamp !== null) {
-          minTimestamp = prevTimestamp + 0.01; // 10ms
-        }
-        break;
-      }
-    }
-
-    const lockedTime = Math.max(currentTime, minTimestamp);
-    updateLyricTimestamp(project.id, activeLineIndex, lockedTime);
-
     // Find next syncable index or the end marker
     let nextIndex = activeLineIndex + 1;
     while (nextIndex < project.lyrics.length) {
@@ -170,6 +154,25 @@ export default function Synchronizer() {
 
     if (nextIndex < project.lyrics.length) {
       setActiveLineIndex(nextIndex);
+
+      if (project.lyrics[nextIndex].id !== 'end-marker') {
+        // Determine the minimum allowed timestamp (previous line's timestamp + 10ms)
+        let minTimestamp = 0;
+
+        // Find the previous syncable line
+        for (let i = nextIndex - 1; i >= 0; i--) {
+          if (isLineSyncable(i)) {
+            const prevTimestamp = project.lyrics[i].timestamp;
+            if (prevTimestamp !== null) {
+              minTimestamp = prevTimestamp + 0.01; // 10ms
+            }
+            break;
+          }
+        }
+
+        const lockedTime = Math.max(currentTime, minTimestamp);
+        updateLyricTimestamp(project.id, nextIndex, lockedTime);
+      }
     }
   };
 
@@ -222,11 +225,9 @@ export default function Synchronizer() {
 
     const currentTimestamp = project.lyrics[targetIndex].timestamp;
     if (currentTimestamp !== null && isLineSyncable(targetIndex)) {
-      updateLyricTimestamp(
-        project.id,
-        targetIndex,
-        Math.max(0, currentTimestamp - 0.1),
-      );
+      const newTimestamp = Math.max(0, currentTimestamp - 0.1);
+      updateLyricTimestamp(project.id, targetIndex, newTimestamp);
+      seekTo(newTimestamp);
     }
   };
 
@@ -248,7 +249,9 @@ export default function Synchronizer() {
 
     const currentTimestamp = project.lyrics[targetIndex].timestamp;
     if (currentTimestamp !== null && isLineSyncable(targetIndex)) {
-      updateLyricTimestamp(project.id, targetIndex, currentTimestamp + 0.1);
+      const newTimestamp = currentTimestamp + 0.1;
+      updateLyricTimestamp(project.id, targetIndex, newTimestamp);
+      seekTo(newTimestamp);
     }
   };
 
