@@ -53,6 +53,14 @@ export default function Synchronizer() {
     return !VALID_STRUCTURE_TAGS.includes(trimmedUpper);
   };
 
+  const isLineSyncableOrEndMarker = (lineIndex: number) => {
+    if (!project || lineIndex < 0 || lineIndex >= project.lyrics.length)
+      return false;
+    const line = project.lyrics[lineIndex];
+    if (line.id === 'end-marker') return true;
+    return isLineSyncable(lineIndex);
+  };
+
   const {
     isReady,
     isPlaying,
@@ -83,7 +91,7 @@ export default function Synchronizer() {
 
       // Find the last syncable line with a timestamp <= current time
       for (let i = 0; i < project.lyrics.length; i++) {
-        if (!isLineSyncable(i)) continue;
+        if (!isLineSyncableOrEndMarker(i)) continue;
         const t = project.lyrics[i].timestamp;
         if (t !== null && t <= newTime) {
           newActiveIndex = i;
@@ -93,22 +101,7 @@ export default function Synchronizer() {
       }
 
       if (newActiveIndex !== -1 && newActiveIndex !== activeLineIndex) {
-        // Prevent snapping back if user manually reached end-marker
-        const isAtEndMarker =
-          project.lyrics[activeLineIndex]?.id === 'end-marker';
-
-        // Find if newActiveIndex is indeed the last synced line
-        let isLastSyncedLine = true;
-        for (let j = newActiveIndex + 1; j < project.lyrics.length; j++) {
-          if (isLineSyncable(j) && project.lyrics[j].timestamp !== null) {
-            isLastSyncedLine = false;
-            break;
-          }
-        }
-
-        if (!(isAtEndMarker && isLastSyncedLine)) {
-          setActiveLineIndex(newActiveIndex);
-        }
+        setActiveLineIndex(newActiveIndex);
       }
     },
   });
@@ -122,7 +115,7 @@ export default function Synchronizer() {
       let newActiveIndex = 0; // Default to start-marker
 
       for (let i = 0; i < project.lyrics.length; i++) {
-        if (!isLineSyncable(i)) continue;
+        if (!isLineSyncableOrEndMarker(i)) continue;
         const t = project.lyrics[i].timestamp;
         if (t !== null && t <= newTime) {
           newActiveIndex = i;
@@ -493,7 +486,7 @@ export default function Synchronizer() {
                         <div className="text-xs font-mono opacity-50 text-gray-500">
                           {formatTime(line.timestamp as number)}
                         </div>
-                        {isActive && (
+                        {isActive && line.id !== 'end-marker' && (
                           <div
                             className="flex items-center gap-2 mt-2"
                             onClick={(e) => e.stopPropagation()}
