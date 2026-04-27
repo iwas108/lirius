@@ -181,24 +181,22 @@ export default function Synchronizer() {
     if (nextIndex < project.lyrics.length) {
       setActiveLineIndex(nextIndex);
 
-      if (project.lyrics[nextIndex].id !== 'end-marker') {
-        // Determine the minimum allowed timestamp (previous line's timestamp + 10ms)
-        let minTimestamp = 0;
+      // Determine the minimum allowed timestamp (previous line's timestamp + 10ms)
+      let minTimestamp = 0;
 
-        // Find the previous syncable line
-        for (let i = nextIndex - 1; i >= 0; i--) {
-          if (isLineSyncable(i)) {
-            const prevTimestamp = project.lyrics[i].timestamp;
-            if (prevTimestamp !== null) {
-              minTimestamp = prevTimestamp + 0.01; // 10ms
-            }
-            break;
+      // Find the previous syncable line
+      for (let i = nextIndex - 1; i >= 0; i--) {
+        if (isLineSyncable(i)) {
+          const prevTimestamp = project.lyrics[i].timestamp;
+          if (prevTimestamp !== null) {
+            minTimestamp = prevTimestamp + 0.01; // 10ms
           }
+          break;
         }
-
-        const lockedTime = Math.max(currentTime, minTimestamp);
-        updateLyricTimestamp(project.id, nextIndex, lockedTime);
       }
+
+      const lockedTime = Math.max(currentTime, minTimestamp);
+      updateLyricTimestamp(project.id, nextIndex, lockedTime);
     }
   };
 
