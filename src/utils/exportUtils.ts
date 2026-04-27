@@ -32,16 +32,15 @@ export function generateSrt(
 ): string {
   let srtContent = '';
 
-  // Filter out empty lines, and also filter out dummy markers
+  // Filter out empty lines, and the start marker
   const validLyrics = lyrics.filter(
-    (line) =>
-      line.text.trim() !== '' &&
-      line.id !== 'start-marker' &&
-      line.id !== 'end-marker',
+    (line) => line.text.trim() !== '' && line.id !== 'start-marker',
   );
 
   // Filter out Musixmatch structure tags for SRT export
   const exportLyrics = validLyrics.filter((line) => {
+    if (line.id === 'end-marker') return true; // keep end-marker for timing calculations
+
     const trimmed = line.text.trim();
 
     const isExactMatch = VALID_STRUCTURE_TAGS.includes(trimmed.toUpperCase());
@@ -55,6 +54,11 @@ export function generateSrt(
 
   for (let i = 0; i < exportLyrics.length; i++) {
     const currentLine = exportLyrics[i];
+
+    // We don't print the end-marker itself
+    if (currentLine.id === 'end-marker') {
+      continue;
+    }
 
     // Only process synced lines
     if (currentLine.timestamp === null) {

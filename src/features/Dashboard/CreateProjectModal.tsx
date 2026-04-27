@@ -106,6 +106,8 @@ export default function CreateProjectModal({
       const existingProject = projects.find((p) => p.id === editProjectId);
       if (existingProject) {
         // Try to preserve timestamps for lines that didn't change
+        const usedOldLineIds = new Set<string>();
+
         const mergedLyrics = parsedLyrics.map((newLine) => {
           // Find a matching line in the existing project
           // Note: If text changes drastically, it loses timestamp.
@@ -127,9 +129,11 @@ export default function CreateProjectModal({
             (oldLine) =>
               oldLine.text === newLine.text &&
               oldLine.id !== 'start-marker' &&
-              oldLine.id !== 'end-marker',
+              oldLine.id !== 'end-marker' &&
+              !usedOldLineIds.has(oldLine.id),
           );
           if (match) {
+            usedOldLineIds.add(match.id);
             return {
               ...newLine,
               id: match.id,

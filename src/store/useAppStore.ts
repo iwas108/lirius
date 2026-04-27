@@ -67,6 +67,24 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
+      clearLyricTimestampsFromIndex: (projectId, fromIndex) => {
+        set((state) => ({
+          projects: state.projects.map((project) => {
+            if (project.id !== projectId) return project;
+            const updatedLyrics = project.lyrics.map((line, index) => {
+              if (index > fromIndex) {
+                return { ...line, timestamp: null };
+              }
+              return line;
+            });
+            return {
+              ...project,
+              lyrics: updatedLyrics,
+            };
+          }),
+        }));
+      },
+
       updateProject: (projectId, projectData) => {
         set((state) => ({
           projects: state.projects.map((project) =>

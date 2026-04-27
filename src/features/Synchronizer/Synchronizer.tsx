@@ -12,6 +12,8 @@ import {
   Edit3,
   FileText,
   FileAudio,
+  X,
+  ListX,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
@@ -29,6 +31,7 @@ export default function Synchronizer() {
     activeProjectId,
     setActiveProjectId,
     updateLyricTimestamp,
+    clearLyricTimestampsFromIndex,
     audioFiles,
     setAudioFile,
   } = useAppStore();
@@ -60,8 +63,16 @@ export default function Synchronizer() {
     seekTo,
   } = useAudioEngine({
     onEnded: () => {
-      if (project && activeLineIndex < project.lyrics.length) {
-        showToast('Audio ended but there are unsynced lines left.', 'warning');
+      if (project) {
+        const hasUnsyncedLines = project.lyrics.some(
+          (line, index) => isLineSyncable(index) && line.timestamp === null,
+        );
+        if (hasUnsyncedLines) {
+          showToast(
+            'Audio ended but there are unsynced lines left.',
+            'warning',
+          );
+        }
       }
     },
     onTimeUpdate: (newTime: number) => {
@@ -82,7 +93,22 @@ export default function Synchronizer() {
       }
 
       if (newActiveIndex !== -1 && newActiveIndex !== activeLineIndex) {
-        setActiveLineIndex(newActiveIndex);
+        // Prevent snapping back if user manually reached end-marker
+        const isAtEndMarker =
+          project.lyrics[activeLineIndex]?.id === 'end-marker';
+
+        // Find if newActiveIndex is indeed the last synced line
+        let isLastSyncedLine = true;
+        for (let j = newActiveIndex + 1; j < project.lyrics.length; j++) {
+          if (isLineSyncable(j) && project.lyrics[j].timestamp !== null) {
+            isLastSyncedLine = false;
+            break;
+          }
+        }
+
+        if (!(isAtEndMarker && isLastSyncedLine)) {
+          setActiveLineIndex(newActiveIndex);
+        }
       }
     },
   });
@@ -155,24 +181,22 @@ export default function Synchronizer() {
     if (nextIndex < project.lyrics.length) {
       setActiveLineIndex(nextIndex);
 
-      if (project.lyrics[nextIndex].id !== 'end-marker') {
-        // Determine the minimum allowed timestamp (previous line's timestamp + 10ms)
-        let minTimestamp = 0;
+      // Determine the minimum allowed timestamp (previous line's timestamp + 10ms)
+      let minTimestamp = 0;
 
-        // Find the previous syncable line
-        for (let i = nextIndex - 1; i >= 0; i--) {
-          if (isLineSyncable(i)) {
-            const prevTimestamp = project.lyrics[i].timestamp;
-            if (prevTimestamp !== null) {
-              minTimestamp = prevTimestamp + 0.01; // 10ms
-            }
-            break;
+      // Find the previous syncable line
+      for (let i = nextIndex - 1; i >= 0; i--) {
+        if (isLineSyncable(i)) {
+          const prevTimestamp = project.lyrics[i].timestamp;
+          if (prevTimestamp !== null) {
+            minTimestamp = prevTimestamp + 0.01; // 10ms
           }
+          break;
         }
-
-        const lockedTime = Math.max(currentTime, minTimestamp);
-        updateLyricTimestamp(project.id, nextIndex, lockedTime);
       }
+
+      const lockedTime = Math.max(currentTime, minTimestamp);
+      updateLyricTimestamp(project.id, nextIndex, lockedTime);
     }
   };
 
@@ -465,8 +489,37 @@ export default function Synchronizer() {
                   >
                     {line.text}
                     {hasTimestamp && (
-                      <div className="text-xs font-mono opacity-50 mt-2 text-gray-500">
-                        {formatTime(line.timestamp as number)}
+                      <div className="flex flex-col items-center mt-2">
+                        <div className="text-xs font-mono opacity-50 text-gray-500">
+                          {formatTime(line.timestamp as number)}
+                        </div>
+                        {isActive && (
+                          <div
+                            className="flex items-center gap-2 mt-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() =>
+                                updateLyricTimestamp(project.id, index, null)
+                              }
+                              className="flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-wider font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors focus:outline-none"
+                              aria-label="Clear Line"
+                            >
+                              <X className="w-3 h-3" />
+                              Clear Line
+                            </button>
+                            <button
+                              onClick={() =>
+                                clearLyricTimestampsFromIndex(project.id, index)
+                              }
+                              className="flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-wider font-semibold bg-gray-100 dark:bg-gray-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors focus:outline-none"
+                              aria-label="Clear Below"
+                            >
+                              <ListX className="w-3 h-3" />
+                              Clear Below
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

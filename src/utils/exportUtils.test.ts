@@ -59,6 +59,20 @@ Third line`;
       expect(generateSrt(lyrics, 10)).toBe(expectedSrt);
     });
 
+    it('should use end-marker timestamp for the last synced line', () => {
+      const lyrics: LyricLine[] = [
+        { id: '1', text: 'First line', timestamp: 5.0 },
+        { id: 'end-marker', text: 'End of Lyric', timestamp: 8.5 },
+      ];
+
+      // It should use 8.5 for the end time of First line, instead of falling back to audioDuration
+      const expectedSrt = `1
+00:00:05,000 --> 00:00:08,499
+First line`;
+
+      expect(generateSrt(lyrics, 10)).toBe(expectedSrt);
+    });
+
     it('should calculate last line duration if audio is shorter than last timestamp', () => {
       const lyrics: LyricLine[] = [
         { id: '1', text: 'First line', timestamp: 5.0 },
