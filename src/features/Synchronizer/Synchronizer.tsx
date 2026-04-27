@@ -63,8 +63,16 @@ export default function Synchronizer() {
     seekTo,
   } = useAudioEngine({
     onEnded: () => {
-      if (project && activeLineIndex < project.lyrics.length) {
-        showToast('Audio ended but there are unsynced lines left.', 'warning');
+      if (project) {
+        const hasUnsyncedLines = project.lyrics.some(
+          (line, index) => isLineSyncable(index) && line.timestamp === null,
+        );
+        if (hasUnsyncedLines) {
+          showToast(
+            'Audio ended but there are unsynced lines left.',
+            'warning',
+          );
+        }
       }
     },
     onTimeUpdate: (newTime: number) => {
@@ -85,7 +93,22 @@ export default function Synchronizer() {
       }
 
       if (newActiveIndex !== -1 && newActiveIndex !== activeLineIndex) {
-        setActiveLineIndex(newActiveIndex);
+        // Prevent snapping back if user manually reached end-marker
+        const isAtEndMarker =
+          project.lyrics[activeLineIndex]?.id === 'end-marker';
+
+        // Find if newActiveIndex is indeed the last synced line
+        let isLastSyncedLine = true;
+        for (let j = newActiveIndex + 1; j < project.lyrics.length; j++) {
+          if (isLineSyncable(j) && project.lyrics[j].timestamp !== null) {
+            isLastSyncedLine = false;
+            break;
+          }
+        }
+
+        if (!(isAtEndMarker && isLastSyncedLine)) {
+          setActiveLineIndex(newActiveIndex);
+        }
       }
     },
   });
