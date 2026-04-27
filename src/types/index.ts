@@ -24,6 +24,7 @@ export interface AppState {
     lineIndex: number,
     timestamp: number | null,
   ) => void;
+  clearLyricTimestampsFromIndex: (projectId: string, fromIndex: number) => void;
   updateProject: (
     projectId: string,
     projectData: Partial<Omit<Project, 'id' | 'createdAt'>>,

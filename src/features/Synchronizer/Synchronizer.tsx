@@ -12,6 +12,8 @@ import {
   Edit3,
   FileText,
   FileAudio,
+  X,
+  ListX,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
@@ -29,6 +31,7 @@ export default function Synchronizer() {
     activeProjectId,
     setActiveProjectId,
     updateLyricTimestamp,
+    clearLyricTimestampsFromIndex,
     audioFiles,
     setAudioFile,
   } = useAppStore();
@@ -465,8 +468,37 @@ export default function Synchronizer() {
                   >
                     {line.text}
                     {hasTimestamp && (
-                      <div className="text-xs font-mono opacity-50 mt-2 text-gray-500">
-                        {formatTime(line.timestamp as number)}
+                      <div className="flex flex-col items-center mt-2">
+                        <div className="text-xs font-mono opacity-50 text-gray-500">
+                          {formatTime(line.timestamp as number)}
+                        </div>
+                        {isActive && (
+                          <div
+                            className="flex items-center gap-2 mt-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() =>
+                                updateLyricTimestamp(project.id, index, null)
+                              }
+                              className="flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-wider font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors focus:outline-none"
+                              aria-label="Clear Line"
+                            >
+                              <X className="w-3 h-3" />
+                              Clear Line
+                            </button>
+                            <button
+                              onClick={() =>
+                                clearLyricTimestampsFromIndex(project.id, index)
+                              }
+                              className="flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-wider font-semibold bg-gray-100 dark:bg-gray-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors focus:outline-none"
+                              aria-label="Clear Below"
+                            >
+                              <ListX className="w-3 h-3" />
+                              Clear Below
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
