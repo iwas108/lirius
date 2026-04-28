@@ -1,14 +1,15 @@
 # Lirius
 
-Lirius is a complete web-based lyric timing synchronizer app. It helps users synchronize plain-text lyrics with `.flac` audio files, and output a valid `.srt` file.
+Lirius is a complete web-based lyric timing synchronizer app. It helps users synchronize plain-text lyrics with `.flac` audio files, and output a valid `.srt` or `.txt` file.
 
 ## Features
 
-- **Musixmatch-like Interface:** View a vertical list of lyrics centered on the screen, auto-scrolling with the current line.
-- **Keyboard Shortcuts:** Fast synchronization controls using keyboard arrows (Lock line, Nudge, Reset).
-- **Responsive & Dark Mode:** Designed mobile-first with smart dark/light theme options using Tailwind CSS.
-- **Local Dashboard:** Resume incomplete projects straight from your browser. Data is persisted to local storage (due to browser security constraints, you must re-select your original `.flac` file to resume).
-- **Export to SRT:** Generates a correctly formatted `.srt` file for your synchronized lyrics.
+- **Musixmatch-like Interface:** View a vertical list of lyrics centered on the screen, auto-scrolling with the current line. Includes smart lyric input modal enforcing Musixmatch guidelines, an auto-fix utility, and strict structural tag controls.
+- **Two-way Synchronization:** Click the audio seek bar to automatically update the active lyric line and auto-scroll, or click a synced lyric line to update the audio seek bar to that timestamp.
+- **Keyboard Shortcuts:** Fast synchronization controls using keyboard arrows (Down to lock line/next, Up to reset/previous, Left/Right to fine-tune timing).
+- **Responsive & Touch Controls:** Designed mobile-first with smart dark/light theme options using Tailwind CSS. On-screen touch controls available for easy lyric synchronization on both mobile and desktop.
+- **Local Dashboard:** Resume incomplete projects straight from your browser. Data is persisted to local storage to manage multiple works (CRUD operations). Due to browser security constraints, you must re-select your original `.flac` file to resume.
+- **Advanced SRT & TXT Export:** Generates a correctly formatted `.srt` file for your synchronized lyrics (excluding structural tags), or `.txt` files (including Musixmatch structural tags). Supports advanced handling of `#INSTRUMENTAL` tags.
 
 ## Technology Stack
 
@@ -26,7 +27,7 @@ Lirius is a complete web-based lyric timing synchronizer app. It helps users syn
 
 2. **Run the Development Server:**
    ```bash
-   npm run dev
+   npm run dev &
    ```
 
 3. **Build for Production:**
