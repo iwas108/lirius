@@ -1,13 +1,119 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Essential Meta Tags -->
+    <title>Lirius - Web-based Lyric Timing Synchronizer</title>
+    <meta name="description" content="Lirius is a powerful web-based lyric timing synchronizer app. Easily synchronize plain-text lyrics with .flac audio files and output valid .srt or .txt files for your music. Features Musixmatch-like interface, two-way sync, keyboard shortcuts, and a local dashboard.">
+    <meta name="keywords" content="lyric synchronizer, lyric timing, srt export, txt export, musixmatch formatter, flac sync, lyric timing app, web lyric sync, lirius">
+    <meta name="author" content="iwas108">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>lirius</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://iwas108.github.io/lirius/">
+    <meta property="og:title" content="Lirius - Web-based Lyric Timing Synchronizer">
+    <meta property="og:description" content="Synchronize your plain-text lyrics with .flac audio files effortlessly. Export valid .srt or .txt files with our robust web-based tool.">
+    <meta property="og:image" content="https://iwas108.github.io/lirius/dist/img/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://iwas108.github.io/lirius/">
+    <meta property="twitter:title" content="Lirius - Web-based Lyric Timing Synchronizer">
+    <meta property="twitter:description" content="Synchronize your plain-text lyrics with .flac audio files effortlessly. Export valid .srt or .txt files with our robust web-based tool.">
+    <meta property="twitter:image" content="https://iwas108.github.io/lirius/dist/img/og-image.png">
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            color: #333;
+            background-color: #f9fafb;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #111827;
+                color: #e5e7eb;
+            }
+            a { color: #60a5fa; }
+            code { background: #374151; }
+        }
+        h1, h2 { color: #111827; }
+        @media (prefers-color-scheme: dark) {
+            h1, h2 { color: #f9fafb; }
+        }
+        a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        a:hover { text-decoration: underline; }
+        .cta-button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white !important;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            font-size: 1.25rem;
+            margin: 2rem 0;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+        .cta-button:hover {
+            background-color: #1d4ed8;
+            text-decoration: none;
+        }
+        code {
+            background: #f3f4f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+            .container {
+                background: #1f2937;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lirius</h1>
+        <p>Lirius is a complete web-based lyric timing synchronizer app. It helps users synchronize plain-text lyrics with <code>.flac</code> audio files, and output a valid <code>.srt</code> or <code>.txt</code> file.</p>
+
+        <div style="text-align: center;">
+            <a href="/lirius/dist/" class="cta-button">Launch Lirius App</a>
+        </div>
+
+        <h2>Features</h2>
+        <ul>
+            <li><strong>Musixmatch-like Interface:</strong> View a vertical list of lyrics centered on the screen, auto-scrolling with the current line. Includes smart lyric input modal enforcing Musixmatch guidelines, an auto-fix utility, and strict structural tag controls.</li>
+            <li><strong>Two-way Synchronization:</strong> Click the audio seek bar to automatically update the active lyric line and auto-scroll, or click a synced lyric line to update the audio seek bar to that timestamp.</li>
+            <li><strong>Keyboard Shortcuts:</strong> Fast synchronization controls using keyboard arrows (Down to lock line/next, Up to reset/previous, Left/Right to fine-tune timing).</li>
+            <li><strong>Responsive & Touch Controls:</strong> Designed mobile-first with smart dark/light theme options using Tailwind CSS. On-screen touch controls available for easy lyric synchronization on both mobile and desktop.</li>
+            <li><strong>Local Dashboard:</strong> Resume incomplete projects straight from your browser. Data is persisted to local storage to manage multiple works (CRUD operations). Due to browser security constraints, you must re-select your original <code>.flac</code> file to resume.</li>
+            <li><strong>Advanced SRT & TXT Export:</strong> Generates a correctly formatted <code>.srt</code> file for your synchronized lyrics (excluding structural tags), or <code>.txt</code> files (including Musixmatch structural tags). Supports advanced handling of <code>#INSTRUMENTAL</code> tags.</li>
+        </ul>
+
+        <h2>Technology Stack</h2>
+        <ul>
+            <li><strong>Frontend:</strong> React, Vite, TypeScript</li>
+            <li><strong>Styling:</strong> Tailwind CSS, Lucide React (Icons)</li>
+            <li><strong>State Management:</strong> Zustand (with persist middleware)</li>
+            <li><strong>Testing:</strong> Vitest</li>
+        </ul>
+    </div>
+</body>
 </html>

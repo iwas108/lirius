@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run --dir app/src"
   },
   "dependencies": {
     "autoprefixer": "^10.5.0",
