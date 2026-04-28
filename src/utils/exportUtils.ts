@@ -78,14 +78,14 @@ export function generateSrt(
     }
 
     if (nextSyncedIndex < exportLyrics.length) {
-      // Calculate end time as 1ms before the start of the next line
+      // Calculate end time as 1ms before the start of the next line (which may be the end-marker)
       endTime = (exportLyrics[nextSyncedIndex].timestamp as number) - 0.001;
       // Ensure end time is not less than start time (just a safety check)
       if (endTime <= startTime) {
         endTime = startTime + 0.1; // fallback to +100ms
       }
     } else {
-      // For the last synced line, use the audio duration or add 2 seconds if not provided
+      // For the last synced line (no end marker timestamp), use the audio duration or add 2 seconds if not provided
       endTime = audioDuration > startTime ? audioDuration : startTime + 2.0;
     }
 
