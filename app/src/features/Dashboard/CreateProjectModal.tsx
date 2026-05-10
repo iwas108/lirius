@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, AlertTriangle, Check, Wand2 } from 'lucide-react';
+import { X, AlertTriangle, Check, Wand2, Upload } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { useToastStore } from '../../store/useToastStore';
 import {
   parseLyrics,
   validateLyrics,
   autoFixLyrics,
   VALID_STRUCTURE_TAGS,
+  parseSRT,
 } from '../../utils/lyricParser';
+import type { ParsedSRTLine } from '../../utils/lyricParser';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -22,9 +25,16 @@ export default function CreateProjectModal({
 }: CreateProjectModalProps) {
   const [projectName, setProjectName] = useState('');
   const [lyricsText, setLyricsText] = useState('');
+  const [importedSRT, setImportedSRT] = useState<{
+    lines: ParsedSRTLine[];
+    endMarkerTimestamp: number | null;
+  } | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { projects, createProject, updateProject } = useAppStore();
+  const { showToast } = useToastStore();
 
   // Compute warnings directly without useEffect to avoid cascading renders
   const warnings = isOpen ? validateLyrics(lyricsText) : [];
@@ -53,6 +63,7 @@ export default function CreateProjectModal({
         setProjectName('');
 
         setLyricsText('');
+        setImportedSRT(null);
       }
     }
     prevIsOpenRef.current = isOpen;
@@ -95,12 +106,85 @@ export default function CreateProjectModal({
     }, 0);
   };
 
+  const handleSRTUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        const parsed = parseSRT(content);
+        if (parsed.lines.length > 0) {
+          setImportedSRT(parsed);
+          setLyricsText(parsed.lines.map((l) => l.text).join('\n'));
+          showToast(
+            'SRT imported. Please re-add structural tags (e.g., #VERSE) if needed.',
+            'warning',
+          );
+        } else {
+          showToast('Failed to parse SRT file or file is empty.', 'error');
+        }
+      }
+    };
+    reader.onerror = () => {
+      showToast('Error reading SRT file.', 'error');
+    };
+    reader.readAsText(file);
+
+    // Reset input so the same file can be uploaded again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!projectName.trim() || !lyricsText.trim()) return;
 
     const parsedLyrics = parseLyrics(lyricsText);
+
+    // If we have imported SRT data, try to merge its timestamps sequentially
+    if (importedSRT && !editProjectId) {
+      let srtLineIndex = 0;
+
+      const mergedLyrics = parsedLyrics.map((line) => {
+        if (line.id === 'start-marker') {
+          return line;
+        }
+        if (line.id === 'end-marker') {
+          return { ...line, timestamp: importedSRT.endMarkerTimestamp };
+        }
+
+        const isStructural = VALID_STRUCTURE_TAGS.includes(
+          line.text.toUpperCase(),
+        );
+
+        // Also ensure we don't assign a timestamp to a generated musical note
+        // that comes from an #INSTRUMENTAL tag
+        const isMusicalNote = line.text === '🎵';
+
+        if (
+          !isStructural &&
+          !isMusicalNote &&
+          srtLineIndex < importedSRT.lines.length
+        ) {
+          const srtTimestamp = importedSRT.lines[srtLineIndex].timestamp;
+          srtLineIndex++;
+          return { ...line, timestamp: srtTimestamp };
+        }
+
+        return line;
+      });
+
+      createProject({
+        name: projectName.trim(),
+        lyrics: mergedLyrics,
+      });
+      onClose();
+      return;
+    }
 
     if (editProjectId) {
       const existingProject = projects.find((p) => p.id === editProjectId);
@@ -207,12 +291,33 @@ export default function CreateProjectModal({
 
             <div>
               <div className="flex justify-between items-end mb-1">
-                <label
-                  htmlFor="lyrics"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Plain Text Lyrics
-                </label>
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="lyrics"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Plain Text Lyrics
+                  </label>
+                  {!editProjectId && (
+                    <>
+                      <input
+                        type="file"
+                        accept=".srt"
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={handleSRTUpload}
+                        id="srt-upload"
+                      />
+                      <label
+                        htmlFor="srt-upload"
+                        className="cursor-pointer flex items-center gap-1 text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-md transition-colors"
+                      >
+                        <Upload className="w-3 h-3" />
+                        Import .SRT
+                      </label>
+                    </>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={handleAutoFix}
