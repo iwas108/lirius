@@ -200,3 +200,73 @@ export function autoFixLyrics(text: string): string {
   // The parseLyrics drops empty lines anyway, so keeping them in text is fine.
   return fixedLines.join('\n');
 }
+
+export interface ParsedSRTLine {
+  text: string;
+  timestamp: number | null;
+}
+
+export interface ParsedSRTResult {
+  lines: ParsedSRTLine[];
+  endMarkerTimestamp: number | null;
+}
+
+/**
+ * Parses an SRT string into an array of lines with text and timestamps,
+ * and extracts the final end time for the end-marker.
+ *
+ * @param {string} srtText - The raw SRT text.
+ * @returns {ParsedSRTResult} An object containing the lines and the end marker timestamp.
+ */
+export function parseSRT(srtText: string): ParsedSRTResult {
+  if (!srtText) return { lines: [], endMarkerTimestamp: null };
+
+  const lines: ParsedSRTLine[] = [];
+  // Split by double newline to get blocks. Handle both CRLF and LF.
+  const blocks = srtText.trim().split(/\r?\n\r?\n/);
+  let lastEndTime: number | null = null;
+
+  for (const block of blocks) {
+    const blockLines = block.split(/\r?\n/);
+    if (blockLines.length < 3) continue;
+
+    // Line 0: Index (ignore)
+    // Line 1: Timestamp "00:00:00,000 --> 00:00:05,000"
+    const timestampLine = blockLines[1];
+    // Line 2+: Text (could be multiple lines, though usually just one)
+    const textLines = blockLines.slice(2).join('\n');
+
+    const timeMatch = timestampLine.match(
+      /(\d{2}):(\d{2}):(\d{2}),(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2}),(\d{3})/,
+    );
+    if (timeMatch) {
+      const startHours = parseInt(timeMatch[1], 10);
+      const startMinutes = parseInt(timeMatch[2], 10);
+      const startSeconds = parseInt(timeMatch[3], 10);
+      const startMs = parseInt(timeMatch[4], 10);
+
+      const startTime =
+        startHours * 3600 + startMinutes * 60 + startSeconds + startMs / 1000;
+
+      const endHours = parseInt(timeMatch[5], 10);
+      const endMinutes = parseInt(timeMatch[6], 10);
+      const endSeconds = parseInt(timeMatch[7], 10);
+      const endMs = parseInt(timeMatch[8], 10);
+
+      lastEndTime =
+        endHours * 3600 + endMinutes * 60 + endSeconds + endMs / 1000;
+
+      lines.push({
+        text: textLines.trim(),
+        timestamp: startTime,
+      });
+    } else {
+      lines.push({
+        text: textLines.trim(),
+        timestamp: null,
+      });
+    }
+  }
+
+  return { lines, endMarkerTimestamp: lastEndTime };
+}
