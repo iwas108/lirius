@@ -12,6 +12,7 @@ import {
   Edit3,
   FileText,
   FileAudio,
+  FileJson,
   X,
   ListX,
 } from 'lucide-react';
@@ -280,7 +281,7 @@ export default function Synchronizer() {
     isActive: isReady && !isHelpOpen && !isEditModalOpen && !isExportMenuOpen,
   });
 
-  const handleExport = (format: 'srt' | 'txt') => {
+  const handleExport = (format: 'srt' | 'txt' | 'lirius') => {
     if (!project) return;
 
     if (format === 'srt') {
@@ -295,12 +296,21 @@ export default function Synchronizer() {
       }
     }
 
-    const content =
-      format === 'srt'
-        ? generateSrt(project.lyrics, duration)
-        : generateTxt(project.lyrics);
+    let content: string;
+    let type: string;
 
-    const blob = new Blob([content], { type: 'text/plain' });
+    if (format === 'lirius') {
+      content = JSON.stringify(project, null, 2);
+      type = 'application/json';
+    } else {
+      content =
+        format === 'srt'
+          ? generateSrt(project.lyrics, duration)
+          : generateTxt(project.lyrics);
+      type = 'text/plain';
+    }
+
+    const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement('a');
@@ -409,6 +419,19 @@ export default function Synchronizer() {
                           <div className="font-medium">Export as .TXT</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                             With tags, no timings
+                          </div>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => handleExport('lirius')}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 border-t border-gray-100 dark:border-gray-700"
+                        role="menuitem"
+                      >
+                        <FileJson className="w-4 h-4 text-blue-500" />
+                        <div>
+                          <div className="font-medium">Export as .LIRIUS</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            Full project backup
                           </div>
                         </div>
                       </button>
