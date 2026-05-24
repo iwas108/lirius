@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, AlertTriangle, Check, Wand2, Upload } from 'lucide-react';
+import { X, AlertTriangle, Check, Wand2, Upload, FileJson } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useToastStore } from '../../store/useToastStore';
 import {
@@ -32,6 +32,7 @@ export default function CreateProjectModal({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const liriusInputRef = useRef<HTMLInputElement>(null);
 
   const { projects, createProject, updateProject } = useAppStore();
   const { showToast } = useToastStore();
@@ -135,6 +136,47 @@ export default function CreateProjectModal({
     // Reset input so the same file can be uploaded again if needed
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleLiriusUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        try {
+          const parsed = JSON.parse(content);
+          if (parsed && typeof parsed.name === 'string' && Array.isArray(parsed.lyrics)) {
+            createProject({
+              name: parsed.name,
+              lyrics: parsed.lyrics,
+            });
+
+            // To auto switch to it, we'll find the newly created project by looking at the last item
+            // Because createProject doesn't return the ID synchronously, we can rely on the fact that
+            // activeProjectId might be auto-set by store, but just to be sure if user asked to auto-switch:
+            // The store already does: activeProjectId: newProject.id in createProject!
+
+            showToast('Project imported successfully!', 'success');
+            onClose();
+          } else {
+            showToast('Invalid .lirius file format.', 'error');
+          }
+        } catch (error) {
+          showToast('Failed to parse .lirius file.', 'error');
+        }
+      }
+    };
+    reader.onerror = () => {
+      showToast('Error reading .lirius file.', 'error');
+    };
+    reader.readAsText(file);
+
+    if (liriusInputRef.current) {
+      liriusInputRef.current.value = '';
     }
   };
 
@@ -314,6 +356,22 @@ export default function CreateProjectModal({
                       >
                         <Upload className="w-3 h-3" />
                         Import .SRT
+                      </label>
+
+                      <input
+                        type="file"
+                        accept=".lirius"
+                        className="hidden"
+                        ref={liriusInputRef}
+                        onChange={handleLiriusUpload}
+                        id="lirius-upload"
+                      />
+                      <label
+                        htmlFor="lirius-upload"
+                        className="cursor-pointer flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md transition-colors"
+                      >
+                        <FileJson className="w-3 h-3" />
+                        Import .LIRIUS
                       </label>
                     </>
                   )}
