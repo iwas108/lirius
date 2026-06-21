@@ -34,7 +34,17 @@ const EXCLUDED_PROGRESS_TAGS = [
   '#HOOK',
   '#BRIDGE',
   '#OUTRO',
-  '#INSTRUMENTAL',
+];
+
+/** Structure tags that are non-syncable dividers (excludes #INSTRUMENTAL which IS syncable) */
+const NON_SYNCABLE_TAGS = [
+  '#INTRO',
+  '#VERSE',
+  '#CHORUS',
+  '#PRE-CHORUS',
+  '#HOOK',
+  '#BRIDGE',
+  '#OUTRO',
 ];
 
 export default function Synchronizer() {
@@ -66,7 +76,7 @@ export default function Synchronizer() {
     const line = project.lyrics[lineIndex];
     if (line.id === 'start-marker' || line.id === 'end-marker') return false;
     const trimmedUpper = line.text.trim().toUpperCase();
-    return !VALID_STRUCTURE_TAGS.includes(trimmedUpper);
+    return !NON_SYNCABLE_TAGS.includes(trimmedUpper);
   };
 
   const isLineSyncableOrEndMarker = (lineIndex: number) => {
@@ -83,6 +93,7 @@ export default function Synchronizer() {
     const line = project.lyrics[lineIndex];
     if (line.id === 'start-marker' || line.id === 'end-marker') return false;
     const textUpper = line.text.trim().toUpperCase();
+    if (NON_SYNCABLE_TAGS.includes(textUpper)) return false;
     if (EXCLUDED_PROGRESS_TAGS.includes(textUpper)) return false;
     return line.timestamp === null;
   };
@@ -596,8 +607,10 @@ export default function Synchronizer() {
                   const isStructureTag = VALID_STRUCTURE_TAGS.includes(
                     line.text.trim().toUpperCase(),
                   );
+                  const isInstrumental =
+                    line.text.trim().toUpperCase() === '#INSTRUMENTAL';
 
-                  if (isStructureTag) {
+                  if (isStructureTag && !isInstrumental) {
                     return (
                       <div
                         key={line.id}
@@ -606,9 +619,7 @@ export default function Synchronizer() {
                       >
                         <div className="h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent flex-1" />
                         <span className="px-6 text-xs font-bold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500">
-                          {line.text.trim().toUpperCase() === '#INSTRUMENTAL'
-                            ? '🎵 INSTRUMENTAL 🎵'
-                            : line.text.replace(/^#/, '')}
+                          {line.text.replace(/^#/, '')}
                         </span>
                         <div className="h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent flex-1" />
                       </div>
@@ -692,7 +703,7 @@ export default function Synchronizer() {
                                   : 'text-2xl md:text-4xl text-slate-700 dark:text-slate-300'
                             }
                           >
-                            {line.text}
+                            {isInstrumental ? '🎵 INSTRUMENTAL 🎵' : line.text}
                           </span>
                           {isLineUnsynced(index) && (
                             <span className="w-2.5 h-2.5 shrink-0 opacity-0 pointer-events-none" />

@@ -44,7 +44,6 @@ const EXCLUDED_PROGRESS_TAGS = [
   '#HOOK',
   '#BRIDGE',
   '#OUTRO',
-  '#INSTRUMENTAL',
 ];
 
 const getSyncableLyricsCount = (
