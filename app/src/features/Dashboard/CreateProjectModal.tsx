@@ -8,6 +8,7 @@ import {
   PlusCircle,
   Trash2,
   GripVertical,
+  Sparkles,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useToastStore } from '../../store/useToastStore';
@@ -210,6 +211,42 @@ export default function CreateProjectModal({
         (inputs[insertIndex] as HTMLInputElement).focus();
       }
     }, 0);
+  };
+
+  const handleCleanIllegalCharacters = () => {
+    let fixedCount = 0;
+    const newLines = lines.map((line) => {
+      const trimmed = line.text.trim();
+      const isStructureTag = VALID_STRUCTURE_TAGS.includes(
+        trimmed.toUpperCase(),
+      );
+      const isTagLike =
+        trimmed.startsWith('#') ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'));
+
+      if (isStructureTag || isTagLike) {
+        return line;
+      }
+
+      const cleanedText = line.text.replace(/[^A-Za-z\-()"1-9,\s]/g, '');
+      if (cleanedText !== line.text) {
+        fixedCount++;
+      }
+      return {
+        ...line,
+        text: cleanedText,
+      };
+    });
+
+    if (fixedCount > 0) {
+      setLines(newLines);
+      showToast(
+        `Removed illegal characters from ${fixedCount} line(s).`,
+        'success',
+      );
+    } else {
+      showToast('No illegal characters found in lyric lines.', 'info');
+    }
   };
 
   const handleSRTUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -431,6 +468,20 @@ export default function CreateProjectModal({
                   + Add Instrumental Block
                 </button>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Lyric Tools
+              </label>
+              <button
+                type="button"
+                onClick={handleCleanIllegalCharacters}
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 rounded-xl transition-all font-medium text-sm shadow-sm"
+              >
+                <Sparkles className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                Auto Fix Illegal Characters
+              </button>
             </div>
 
             {warnings.length > 0 && (

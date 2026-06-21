@@ -78,5 +78,10 @@ This log records features, fixes, and architectural adjustments completed on the
 - **Lyric Line Reordering**: Implemented smooth HTML5 drag-and-drop reordering inside `CreateProjectModal.tsx`. Users can grab the `GripVertical` handle on any row to drag and insert it at a new position. The list updates in real-time, providing immediate visual feedback by dimming and scaling the dragged row. Text selection within input fields is completely preserved because only the grip handle is marked as draggable.
 - **Contextual Quick Insert**: Modified the "Quick Insert" buttons (`#INTRO`, `#VERSE`, etc.) and the "Add Instrumental Block" button to insert tags directly above the currently active (focused) lyric line instead of appending them to the bottom of the list. The new input field automatically gains focus post-insertion.
 
+### 13. Lyric Editor Auto Fix for Illegal Characters
+
+- **Auto Fix Button**: Introduced a "Lyric Tools" section in the project creation and edit modal containing an "Auto Fix Illegal Characters" button.
+- **Illegal Character Filtering**: The cleanup process targets only non-structural lyric lines, filtering out any characters not matching the allowed set (letters `A-Za-z`, numbers `1-9`, hyphens `-`, commas `,`, double quotes `"`, parentheses `()`, and spaces). Dots/periods `.` and other invalid punctuation/symbols are programmatically stripped, and a summary toast notification reports the count of cleaned lines.
+
 
 
