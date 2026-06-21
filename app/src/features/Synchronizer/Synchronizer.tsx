@@ -166,8 +166,8 @@ export default function Synchronizer() {
     const timestamp = project.lyrics[index].timestamp;
     if (timestamp !== null) {
       seekTo(timestamp);
-      setActiveLineIndex(index);
     }
+    setActiveLineIndex(index);
   };
 
   const getYoutubeId = (url: string | undefined): string | null => {
@@ -644,7 +644,7 @@ export default function Synchronizer() {
                       key={line.id}
                       ref={isActive ? activeLineRef : null}
                       onClick={() => handleLyricClick(index)}
-                      className={`transition-all duration-500 ease-out transform text-center px-4 w-full ${hasTimestamp ? 'cursor-pointer' : ''} ${opacityClass} ${
+                      className={`transition-all duration-500 ease-out transform text-center px-4 w-full ${isLineSyncable(index) ? 'cursor-pointer' : ''} ${opacityClass} ${
                         isActive
                           ? 'py-8 scale-100'
                           : 'py-2 scale-90 hover:scale-95'
@@ -714,7 +714,7 @@ export default function Synchronizer() {
                       {isActive &&
                         line.id !== 'start-marker' &&
                         line.id !== 'end-marker' &&
-                        !isStructureTag && (
+                        (!isStructureTag || isInstrumental) && (
                           <div
                             className="flex flex-col items-center mt-3"
                             onClick={(e) => e.stopPropagation()}
@@ -725,15 +725,17 @@ export default function Synchronizer() {
                               </div>
                             )}
                             <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  setEditingLineId(line.id);
-                                  setEditingText(line.text);
-                                }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-full transition-all shadow-sm"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" /> Edit Text
-                              </button>
+                              {!isInstrumental && (
+                                <button
+                                  onClick={() => {
+                                    setEditingLineId(line.id);
+                                    setEditingText(line.text);
+                                  }}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-full transition-all shadow-sm"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" /> Edit Text
+                                </button>
+                              )}
                               {hasTimestamp && (
                                 <>
                                   <button

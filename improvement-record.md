@@ -93,3 +93,9 @@ This log records features, fixes, and architectural adjustments completed on the
 - **Syncable INSTRUMENTAL**: Reclassified `#INSTRUMENTAL` from a non-syncable structure divider to a **syncable timed line**. It now accepts timestamps via ArrowDown during syncing, just like regular lyrics and `🎵` lines. Introduced a `NON_SYNCABLE_TAGS` constant in `Synchronizer.tsx` that excludes `#INSTRUMENTAL`, while `VALID_STRUCTURE_TAGS` retains it for parsing and export filtering.
 - **Dashboard Progress Alignment**: Removed `#INSTRUMENTAL` from `EXCLUDED_PROGRESS_TAGS` in both `Synchronizer.tsx` and `Dashboard.tsx`, so it now counts toward sync progress calculations.
 - **Visual Rendering**: `#INSTRUMENTAL` renders as a regular syncable lyric line (with unsync indicator, click-to-seek, and active line highlighting) but displays the text as `🎵 INSTRUMENTAL 🎵` instead of the raw `#INSTRUMENTAL` tag. Other structure tags (`#VERSE`, `#CHORUS`, etc.) remain non-syncable dividers.
+
+### 16. Sync Page Controls & Down Button Improvements
+
+- **Instrumental Controls**: Added timing info display, `Clear`, and `Clear Below` buttons to active instrumental lines (`🎵 INSTRUMENTAL 🎵`), matching regular lyric lines while keeping direct text editing disabled.
+- **Click-to-Select Unsynced Lines**: Updated the lyric line click handler and styles to allow clicking and selecting unsynced lines (lines without a timestamp) as the active line.
+- **Sync Navigation Logic**: Ensured the Down button syncs the line below the current active line (instead of the last line synced) by allowing the active line index to be positioned on any syncable line.
