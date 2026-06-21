@@ -65,8 +65,9 @@ describe('validateLyrics', () => {
   it('should flag end-line punctuation', () => {
     const input = 'Hello world.';
     const warnings = validateLyrics(input);
-    expect(warnings).toHaveLength(1);
+    expect(warnings).toHaveLength(2);
     expect(warnings[0].message).toContain('punctuation');
+    expect(warnings[1].message).toContain('illegal character');
   });
 
   it('should flag malformed tags', () => {
@@ -81,6 +82,15 @@ describe('validateLyrics', () => {
     const warnings = validateLyrics(input);
     expect(warnings).toHaveLength(1);
     expect(warnings[0].message).toContain('slang');
+  });
+
+  it('should flag illegal characters', () => {
+    const input = 'Hello w0rld & friends!';
+    const warnings = validateLyrics(input);
+    const illegalWarning = warnings.find((w) =>
+      w.message.includes('illegal character'),
+    );
+    expect(illegalWarning).toBeDefined();
   });
 });
 

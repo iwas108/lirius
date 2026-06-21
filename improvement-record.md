@@ -83,5 +83,7 @@ This log records features, fixes, and architectural adjustments completed on the
 - **Auto Fix Button**: Introduced a "Lyric Tools" section in the project creation and edit modal containing an "Auto Fix Illegal Characters" button.
 - **Illegal Character Filtering**: The cleanup process targets only non-structural lyric lines, filtering out any characters not matching the allowed set (letters `A-Za-z`, numbers `1-9`, hyphens `-`, commas `,`, double quotes `"`, parentheses `()`, and spaces). Dots/periods `.` and other invalid punctuation/symbols are programmatically stripped, and a summary toast notification reports the count of cleaned lines.
 
+### 14. Formatting Issues Live Validation & Instrumental Music Notation
 
-
+- **Illegal Character Validation in `validateLyrics`**: Extended the `validateLyrics` function in `lyricParser.ts` to detect illegal characters on non-structural lyric lines. The "Formatting Issues" counter in the project editor now auto-updates reactively as lines are edited, focused/blurred, or after the auto fix button is pressed, since the validation derives directly from the `lines` state.
+- **Instrumental Tag Music Notation**: Updated the `#INSTRUMENTAL` structure tag rendering in `Synchronizer.tsx` to display with music notation emojis (`🎵 INSTRUMENTAL 🎵`) instead of plain text, providing a clear visual distinction from other structure tags like `#VERSE` or `#CHORUS`.

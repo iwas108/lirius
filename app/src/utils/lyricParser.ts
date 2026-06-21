@@ -90,7 +90,8 @@ export interface ValidationWarning {
 
 /**
  * Validates lyrics according to basic Musixmatch guidelines.
- * Flags capitalization, end-line punctuation, slang, and malformed tags.
+ * Flags capitalization, end-line punctuation, slang, illegal characters,
+ * and malformed tags.
  *
  * @param {string} text - The raw lyrics text.
  * @returns {ValidationWarning[]} Array of warnings.
@@ -142,6 +143,16 @@ export function validateLyrics(text: string): ValidationWarning[] {
           line: index + 1,
           message:
             'Review slang words (wanna, gonna, etc.). Ensure they match audio.',
+        });
+      }
+
+      // Check for illegal characters (only A-Za-z, 1-9, -, (, ), ", commas, spaces, and 🎵 are allowed)
+      const illegalMatch = trimmed.match(/[^A-Za-z1-9\-()",\s🎵]/gu);
+      if (illegalMatch) {
+        const unique = [...new Set(illegalMatch)];
+        warnings.push({
+          line: index + 1,
+          message: `Contains illegal character(s): ${unique.join(' ')}`,
         });
       }
     }

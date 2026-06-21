@@ -606,7 +606,9 @@ export default function Synchronizer() {
                       >
                         <div className="h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent flex-1" />
                         <span className="px-6 text-xs font-bold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500">
-                          {line.text.replace(/^#/, '')}
+                          {line.text.trim().toUpperCase() === '#INSTRUMENTAL'
+                            ? '🎵 INSTRUMENTAL 🎵'
+                            : line.text.replace(/^#/, '')}
                         </span>
                         <div className="h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent flex-1" />
                       </div>
