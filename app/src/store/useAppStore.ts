@@ -1,6 +1,21 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import type { StateStorage } from 'zustand/middleware';
+import { get, set, del } from 'idb-keyval';
 import type { AppState, Project } from '../types';
+
+// Custom IndexedDB storage for Zustand
+const idbStorage: StateStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    return (await get(name)) || null;
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    await set(name, value);
+  },
+  removeItem: async (name: string): Promise<void> => {
+    await del(name);
+  },
+};
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -94,7 +109,8 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'lirius-storage', // name of item in localStorage
+      name: 'lirius-storage-idb', // name of item in IndexedDB (new name for fresh db)
+      storage: createJSONStorage(() => idbStorage),
       partialize: (state) =>
         Object.fromEntries(
           Object.entries(state).filter(([key]) => key !== 'audioFiles'),

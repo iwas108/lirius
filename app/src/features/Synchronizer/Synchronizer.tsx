@@ -26,6 +26,17 @@ import HelpModal from './HelpModal';
 import CreateProjectModal from '../Dashboard/CreateProjectModal';
 import { useToastStore } from '../../store/useToastStore';
 
+const EXCLUDED_PROGRESS_TAGS = [
+  '#INTRO',
+  '#VERSE',
+  '#CHORUS',
+  '#PRE-CHORUS',
+  '#HOOK',
+  '#BRIDGE',
+  '#OUTRO',
+  '#INSTRUMENTAL',
+];
+
 export default function Synchronizer() {
   const {
     projects,
@@ -35,6 +46,7 @@ export default function Synchronizer() {
     clearLyricTimestampsFromIndex,
     audioFiles,
     setAudioFile,
+    updateProject,
   } = useAppStore();
   const project = projects.find((p) => p.id === activeProjectId);
 
@@ -42,6 +54,9 @@ export default function Synchronizer() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const [editingLineId, setEditingLineId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
+  const [inputYoutubeUrl, setInputYoutubeUrl] = useState('');
 
   const showToast = useToastStore((state) => state.showToast);
 
@@ -62,12 +77,23 @@ export default function Synchronizer() {
     return isLineSyncable(lineIndex);
   };
 
+  const isLineUnsynced = (lineIndex: number) => {
+    if (!project || lineIndex < 0 || lineIndex >= project.lyrics.length)
+      return false;
+    const line = project.lyrics[lineIndex];
+    if (line.id === 'start-marker' || line.id === 'end-marker') return false;
+    const textUpper = line.text.trim().toUpperCase();
+    if (EXCLUDED_PROGRESS_TAGS.includes(textUpper)) return false;
+    return line.timestamp === null;
+  };
+
   const {
     isReady,
     isPlaying,
     currentTime,
     duration,
     loadAudio,
+    loadYouTube,
     togglePlayPause,
     seekTo,
   } = useAudioEngine({
@@ -87,10 +113,8 @@ export default function Synchronizer() {
     onTimeUpdate: (newTime: number) => {
       if (!project || !isPlaying) return;
 
-      // Auto-scroll following the song while playing
       let newActiveIndex = -1;
 
-      // Find the last syncable line with a timestamp <= current time
       for (let i = 0; i < project.lyrics.length; i++) {
         if (!isLineSyncableOrEndMarker(i)) continue;
         const t = project.lyrics[i].timestamp;
@@ -112,16 +136,14 @@ export default function Synchronizer() {
     seekTo(newTime);
 
     if (project) {
-      // Find the last lyric line with a timestamp <= newTime
-      let newActiveIndex = 0; // Default to start-marker
-
+      let newActiveIndex = 0;
       for (let i = 0; i < project.lyrics.length; i++) {
         if (!isLineSyncableOrEndMarker(i)) continue;
         const t = project.lyrics[i].timestamp;
         if (t !== null && t <= newTime) {
           newActiveIndex = i;
         } else if (t !== null && t > newTime) {
-          break; // Since timestamps are ordered, we can break early
+          break;
         }
       }
       setActiveLineIndex(newActiveIndex);
@@ -137,11 +159,64 @@ export default function Synchronizer() {
     }
   };
 
+  const getYoutubeId = (url: string | undefined): string | null => {
+    if (!url) return null;
+    const regExp =
+      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? match[2] : null;
+  };
+  const youtubeId = getYoutubeId(project?.youtubeUrl);
+
+  const lastLoadedSourceRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!isReady && activeProjectId && audioFiles[activeProjectId]) {
-      loadAudio(audioFiles[activeProjectId]);
+    if (project) {
+      if (youtubeId) {
+        if (lastLoadedSourceRef.current !== youtubeId) {
+          lastLoadedSourceRef.current = youtubeId;
+          loadYouTube(youtubeId);
+        }
+      } else if (audioFiles[project.id]) {
+        const file = audioFiles[project.id];
+        const fileKey = `${file.name}-${file.size}`;
+        if (lastLoadedSourceRef.current !== fileKey) {
+          lastLoadedSourceRef.current = fileKey;
+          loadAudio(file);
+        }
+      }
     }
-  }, [activeProjectId, audioFiles, isReady, loadAudio]);
+  }, [project, youtubeId, audioFiles, loadAudio, loadYouTube]);
+
+  const handleSaveInlineEdit = (index: number) => {
+    if (!project) return;
+    const trimmed = editingText.trim();
+    if (!trimmed) {
+      showToast('Lyric line cannot be empty.', 'error');
+      return;
+    }
+    const updatedLyrics = [...project.lyrics];
+    updatedLyrics[index] = { ...updatedLyrics[index], text: trimmed };
+    updateProject(project.id, { lyrics: updatedLyrics });
+    setEditingLineId(null);
+    showToast('Lyric text updated!', 'success');
+  };
+
+  const handleYoutubeSubmit = () => {
+    if (!project) return;
+    const url = inputYoutubeUrl.trim();
+    if (!url) {
+      showToast('Please enter a YouTube URL.', 'error');
+      return;
+    }
+    const id = getYoutubeId(url);
+    if (!id) {
+      showToast('Invalid YouTube URL format.', 'error');
+      return;
+    }
+    updateProject(project.id, { youtubeUrl: url });
+    showToast('YouTube URL loaded successfully!', 'success');
+  };
 
   const handleFileSelect = (file: File) => {
     if (activeProjectId) {
@@ -153,14 +228,11 @@ export default function Synchronizer() {
   const lyricListRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
 
-  // Keyboard Shortcuts Logic
   const handleArrowDown = () => {
     if (!project || activeLineIndex >= project.lyrics.length) return;
-
     const currentLine = project.lyrics[activeLineIndex];
     if (currentLine.id === 'end-marker') return;
 
-    // Find next syncable index or the end marker
     let nextIndex = activeLineIndex + 1;
     while (nextIndex < project.lyrics.length) {
       if (
@@ -174,21 +246,16 @@ export default function Synchronizer() {
 
     if (nextIndex < project.lyrics.length) {
       setActiveLineIndex(nextIndex);
-
-      // Determine the minimum allowed timestamp (previous line's timestamp + 10ms)
       let minTimestamp = 0;
-
-      // Find the previous syncable line
       for (let i = nextIndex - 1; i >= 0; i--) {
         if (isLineSyncable(i)) {
           const prevTimestamp = project.lyrics[i].timestamp;
           if (prevTimestamp !== null) {
-            minTimestamp = prevTimestamp + 0.01; // 10ms
+            minTimestamp = prevTimestamp + 0.01;
           }
           break;
         }
       }
-
       const lockedTime = Math.max(currentTime, minTimestamp);
       updateLyricTimestamp(project.id, nextIndex, lockedTime);
     }
@@ -209,17 +276,9 @@ export default function Synchronizer() {
     }
 
     if (prevIndex >= 0) {
-      // If we go back to a syncable line, clear its timestamp
       if (isLineSyncable(prevIndex)) {
         updateLyricTimestamp(project.id, prevIndex, null);
-      } else if (project.lyrics[activeLineIndex].id === 'end-marker') {
-        // If we were at end marker, and moved back, activeLineIndex was end-marker
-        // we move to the last syncable line which is prevIndex, and we should clear it
-        // Wait, if prevIndex is a syncable line, it's cleared above.
-        // If we move back from the FIRST syncable line, prevIndex is start-marker.
-        // We just move to it, start-marker has no timestamp to clear.
       }
-
       setActiveLineIndex(prevIndex);
     }
   };
@@ -290,7 +349,7 @@ export default function Synchronizer() {
       );
       if (hasUnsyncedLines) {
         showToast(
-          'Warning: Some lyric lines have not been synchronized yet. They will not be included in the SRT export.',
+          'Warning: Some lyric lines have not been synchronized yet.',
           'warning',
         );
       }
@@ -312,7 +371,6 @@ export default function Synchronizer() {
 
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement('a');
     a.href = url;
     a.download = `${project.name || 'lirius-export'}.${format}`;
@@ -323,7 +381,6 @@ export default function Synchronizer() {
     setIsExportMenuOpen(false);
   };
 
-  // Smooth scroll active line into view
   useEffect(() => {
     if (activeLineRef.current && lyricListRef.current) {
       activeLineRef.current.scrollIntoView({
@@ -336,52 +393,48 @@ export default function Synchronizer() {
   if (!project) return null;
 
   return (
-    <div className="flex flex-col h-full absolute inset-0 bg-white dark:bg-gray-900">
-      {/* Header */}
-      <header className="flex items-center p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-10 shrink-0">
+    <div className="flex flex-col h-full absolute inset-0 bg-[#f8fafc] dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-200 dark:selection:bg-blue-900">
+      {/* Header - Glassmorphism */}
+      <header className="absolute top-0 inset-x-0 flex items-center p-4 md:px-8 border-b border-white/20 dark:border-white/5 bg-white/70 dark:bg-[#0f172a]/70 backdrop-blur-xl z-20 transition-all">
         <button
           onClick={() => setActiveProjectId(null)}
-          className="mr-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
+          className="mr-4 p-2.5 rounded-full bg-white dark:bg-slate-800 shadow-sm hover:shadow hover:-translate-x-0.5 border border-slate-200 dark:border-slate-700 transition-all"
           aria-label="Back to Dashboard"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
         </button>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+        <div className="flex-1 overflow-hidden">
+          <h1 className="text-xl md:text-2xl font-extrabold tracking-tight truncate drop-shadow-sm">
             {project.name}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
             {project.lyrics.length} lines total
           </p>
         </div>
-        {isReady && (
-          <div className="flex items-center gap-2">
+        {(isReady || !!youtubeId) && (
+          <div className="flex items-center gap-2 md:gap-3">
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
-              aria-label="Edit Lyrics"
+              className="p-2.5 rounded-full bg-white dark:bg-slate-800 shadow-sm hover:shadow border border-slate-200 dark:border-slate-700 transition-all group"
               title="Edit Lyrics"
             >
-              <Edit3 className="w-5 h-5" />
+              <Edit3 className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-blue-600 transition-colors" />
             </button>
             <button
               onClick={() => setIsHelpOpen(true)}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
-              aria-label="Help"
+              className="p-2.5 rounded-full bg-white dark:bg-slate-800 shadow-sm hover:shadow border border-slate-200 dark:border-slate-700 transition-all group hidden sm:flex"
               title="Help"
             >
-              <HelpCircle className="w-5 h-5" />
+              <HelpCircle className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-blue-600 transition-colors" />
             </button>
             <div className="relative">
               <button
                 onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
-                aria-haspopup="true"
-                aria-expanded={isExportMenuOpen}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full transition-transform hover:scale-105 active:scale-95 font-bold shadow-lg shadow-blue-500/30"
               >
                 <Download className="w-4 h-4" />
                 <span className="hidden sm:inline">Export</span>
-                <ChevronDown className="w-3 h-3 ml-1" />
+                <ChevronDown className="w-4 h-4 ml-0.5 opacity-70" />
               </button>
 
               {isExportMenuOpen && (
@@ -389,49 +442,54 @@ export default function Synchronizer() {
                   <div
                     className="fixed inset-0 z-10"
                     onClick={() => setIsExportMenuOpen(false)}
-                  ></div>
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-20 overflow-hidden">
-                    <div
-                      className="py-1"
-                      role="menu"
-                      aria-orientation="vertical"
-                    >
+                  />
+                  <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 z-20 overflow-hidden transform origin-top-right transition-all">
+                    <div className="py-2" role="menu">
                       <button
                         onClick={() => handleExport('srt')}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
-                        role="menuitem"
+                        className="w-full text-left px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-4 transition-colors group"
                       >
-                        <FileAudio className="w-4 h-4 text-blue-500" />
+                        <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                          <FileAudio className="w-4 h-4" />
+                        </div>
                         <div>
-                          <div className="font-medium">Export as .SRT</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                            .SRT Format
+                          </div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
                             With timings, no tags
                           </div>
                         </div>
                       </button>
                       <button
                         onClick={() => handleExport('txt')}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 border-t border-gray-100 dark:border-gray-700"
-                        role="menuitem"
+                        className="w-full text-left px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-4 transition-colors group border-t border-slate-100 dark:border-slate-700/50"
                       >
-                        <FileText className="w-4 h-4 text-blue-500" />
+                        <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                          <FileText className="w-4 h-4" />
+                        </div>
                         <div>
-                          <div className="font-medium">Export as .TXT</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                            .TXT Format
+                          </div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
                             With tags, no timings
                           </div>
                         </div>
                       </button>
                       <button
                         onClick={() => handleExport('lirius')}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 border-t border-gray-100 dark:border-gray-700"
-                        role="menuitem"
+                        className="w-full text-left px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-4 transition-colors group border-t border-slate-100 dark:border-slate-700/50"
                       >
-                        <FileJson className="w-4 h-4 text-blue-500" />
+                        <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                          <FileJson className="w-4 h-4" />
+                        </div>
                         <div>
-                          <div className="font-medium">Export as .LIRIUS</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            Full project backup
+                          <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                            .LIRIUS Format
+                          </div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                            Project backup
                           </div>
                         </div>
                       </button>
@@ -445,174 +503,273 @@ export default function Synchronizer() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-hidden flex flex-col relative">
-        {!isReady ? (
-          <div className="flex-1 flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-900">
-            <div className="max-w-xl w-full text-center">
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-                Load Audio File
+      <main className="flex-1 relative flex flex-col pt-24 pb-48">
+        {/* Background gradient effects */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-blue-500/10 dark:bg-blue-600/10 blur-3xl pointer-events-none rounded-full" />
+
+        {!(isReady || youtubeId) ? (
+          <div className="flex-1 flex items-center justify-center p-6 z-10">
+            <div className="max-w-xl w-full text-center bg-white dark:bg-slate-800 p-10 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700">
+              <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 transform rotate-3">
+                <FileAudio className="w-8 h-8" />
+              </div>
+              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-3">
+                Load Audio Source
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-8">
-                To resume syncing this project, please re-select the original
-                .flac audio file.
+              <p className="text-slate-500 dark:text-slate-400 mb-10 font-medium leading-relaxed">
+                To resume syncing{' '}
+                <strong className="text-slate-700 dark:text-slate-300">
+                  {project.name}
+                </strong>
+                , please provide a local audio file or a YouTube link.
               </p>
+
               <AudioInput onFileSelect={handleFileSelect} />
+
+              <div className="relative my-8">
+                <div
+                  className="absolute inset-0 flex items-center"
+                  aria-hidden="true"
+                >
+                  <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
+                </div>
+                <div className="relative flex justify-center text-sm font-semibold uppercase">
+                  <span className="bg-white dark:bg-slate-800 px-4 text-slate-400 dark:text-slate-500">
+                    OR
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3 text-left">
+                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400">
+                  YouTube URL
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={inputYoutubeUrl}
+                    onChange={(e) => setInputYoutubeUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white transition-all"
+                  />
+                  <button
+                    onClick={handleYoutubeSubmit}
+                    className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all"
+                  >
+                    Load
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          <div
-            ref={lyricListRef}
-            className="flex-1 overflow-y-auto px-4 py-32 md:px-12 scroll-smooth"
-          >
-            <div className="max-w-3xl mx-auto space-y-8">
-              {project.lyrics.map((line, index) => {
-                const isActive = index === activeLineIndex;
-                const isStructureTag = VALID_STRUCTURE_TAGS.includes(
-                  line.text.trim().toUpperCase(),
-                );
+          <>
+            {youtubeId && (
+              <div className="max-w-xl w-full mx-auto mb-6 px-4 z-20">
+                <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl border border-slate-200/50 dark:border-slate-700/50 bg-black">
+                  {!isReady && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-white z-10">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                        <span className="text-sm text-slate-400">
+                          Loading YouTube Player...
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    id="youtube-player-container"
+                    className="w-full h-full"
+                  />
+                </div>
+              </div>
+            )}
 
-                if (isStructureTag) {
+            <div
+              ref={lyricListRef}
+              className="flex-1 overflow-y-auto px-4 scroll-smooth hide-scrollbar z-10"
+              style={{ paddingBottom: '30vh', paddingTop: '2vh' }}
+            >
+              <div className="max-w-4xl mx-auto flex flex-col gap-6 items-center">
+                {project.lyrics.map((line, index) => {
+                  const isActive = index === activeLineIndex;
+                  const isStructureTag = VALID_STRUCTURE_TAGS.includes(
+                    line.text.trim().toUpperCase(),
+                  );
+
+                  if (isStructureTag) {
+                    return (
+                      <div
+                        key={line.id}
+                        ref={isActive ? activeLineRef : null}
+                        className="flex items-center w-full max-w-lg my-12 opacity-80"
+                      >
+                        <div className="h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent flex-1" />
+                        <span className="px-6 text-xs font-bold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500">
+                          {line.text.replace(/^#/, '')}
+                        </span>
+                        <div className="h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent flex-1" />
+                      </div>
+                    );
+                  }
+
+                  const isPast = index < activeLineIndex;
+                  const hasTimestamp = line.timestamp !== null;
+
+                  // Opacity mapping based on distance from active line
+                  const distance = Math.abs(index - activeLineIndex);
+                  let opacityClass = 'opacity-100';
+                  if (!isActive) {
+                    if (distance === 1) opacityClass = 'opacity-60';
+                    else if (distance === 2) opacityClass = 'opacity-40';
+                    else if (distance === 3) opacityClass = 'opacity-20';
+                    else opacityClass = 'opacity-10';
+                  }
+
                   return (
                     <div
                       key={line.id}
                       ref={isActive ? activeLineRef : null}
-                      className="flex items-center justify-center my-8"
+                      onClick={() => handleLyricClick(index)}
+                      className={`transition-all duration-500 ease-out transform text-center px-4 w-full ${hasTimestamp ? 'cursor-pointer' : ''} ${opacityClass} ${
+                        isActive
+                          ? 'py-8 scale-100'
+                          : 'py-2 scale-90 hover:scale-95'
+                      }`}
                     >
-                      <div className="h-px bg-gray-300 dark:bg-gray-700 flex-1 max-w-[100px]"></div>
-                      <span className="px-4 text-xs font-bold tracking-widest uppercase text-gray-500 dark:text-gray-400">
-                        {line.text.replace(/^#/, '')}
-                      </span>
-                      <div className="h-px bg-gray-300 dark:bg-gray-700 flex-1 max-w-[100px]"></div>
-                    </div>
-                  );
-                }
-
-                const isPast = index < activeLineIndex;
-                const hasTimestamp = line.timestamp !== null;
-
-                return (
-                  <div
-                    key={line.id}
-                    ref={isActive ? activeLineRef : null}
-                    onClick={() => handleLyricClick(index)}
-                    className={`transition-all duration-300 transform text-center px-4 ${hasTimestamp ? 'cursor-pointer hover:opacity-80' : ''} ${
-                      isActive
-                        ? 'text-3xl md:text-5xl font-bold text-blue-600 dark:text-blue-400 scale-100 opacity-100 py-4'
-                        : isPast
-                          ? 'text-xl md:text-2xl font-medium text-gray-400 dark:text-gray-600 scale-95 opacity-50'
-                          : 'text-xl md:text-2xl font-medium text-gray-800 dark:text-gray-200 scale-95 opacity-80'
-                    }`}
-                  >
-                    {line.text}
-                    {hasTimestamp && (
-                      <div className="flex flex-col items-center mt-2">
-                        <div className="text-xs font-mono opacity-50 text-gray-500">
-                          {formatTime(line.timestamp as number)}
+                      {editingLineId === line.id ? (
+                        <div
+                          className="py-2 w-full max-w-xl mx-auto"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="text"
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            onBlur={() => handleSaveInlineEdit(index)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSaveInlineEdit(index);
+                              } else if (e.key === 'Escape') {
+                                setEditingLineId(null);
+                              }
+                            }}
+                            className="w-full px-4 py-2 text-center text-xl md:text-2xl font-bold bg-white dark:bg-slate-800 border-2 border-blue-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white shadow-md"
+                            autoFocus
+                          />
                         </div>
-                        {isActive && line.id !== 'end-marker' && (
+                      ) : (
+                        <div
+                          className={`font-extrabold tracking-tight py-2 flex items-center justify-center gap-3 ${
+                            isActive ? 'pb-3' : ''
+                          }`}
+                          onDoubleClick={(e) => {
+                            if (
+                              line.id !== 'start-marker' &&
+                              line.id !== 'end-marker' &&
+                              !isStructureTag
+                            ) {
+                              e.stopPropagation();
+                              setEditingLineId(line.id);
+                              setEditingText(line.text);
+                            }
+                          }}
+                        >
+                          {isLineUnsynced(index) && (
+                            <span
+                              className="w-2.5 h-2.5 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
+                              title="Unsynchronized line"
+                            />
+                          )}
+                          <span
+                            className={
+                              isActive
+                                ? 'text-4xl md:text-5xl lg:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 drop-shadow-sm'
+                                : isPast
+                                  ? 'text-xl md:text-3xl text-slate-400 dark:text-slate-600'
+                                  : 'text-2xl md:text-4xl text-slate-700 dark:text-slate-300'
+                            }
+                          >
+                            {line.text}
+                          </span>
+                          {isLineUnsynced(index) && (
+                            <span className="w-2.5 h-2.5 shrink-0 opacity-0 pointer-events-none" />
+                          )}
+                        </div>
+                      )}
+
+                      {isActive &&
+                        line.id !== 'start-marker' &&
+                        line.id !== 'end-marker' &&
+                        !isStructureTag && (
                           <div
-                            className="flex items-center gap-2 mt-2"
+                            className="flex flex-col items-center mt-3"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <button
-                              onClick={() =>
-                                updateLyricTimestamp(project.id, index, null)
-                              }
-                              className="flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-wider font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors focus:outline-none"
-                              aria-label="Clear Line"
-                            >
-                              <X className="w-3 h-3" />
-                              Clear Line
-                            </button>
-                            <button
-                              onClick={() =>
-                                clearLyricTimestampsFromIndex(project.id, index)
-                              }
-                              className="flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-wider font-semibold bg-gray-100 dark:bg-gray-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors focus:outline-none"
-                              aria-label="Clear Below"
-                            >
-                              <ListX className="w-3 h-3" />
-                              Clear Below
-                            </button>
+                            {hasTimestamp && (
+                              <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-mono font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 mb-3">
+                                {formatTime(line.timestamp as number)}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingLineId(line.id);
+                                  setEditingText(line.text);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-full transition-all shadow-sm"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" /> Edit Text
+                              </button>
+                              {hasTimestamp && (
+                                <>
+                                  <button
+                                    onClick={() =>
+                                      updateLyricTimestamp(
+                                        project.id,
+                                        index,
+                                        null,
+                                      )
+                                    }
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full transition-all shadow-sm"
+                                  >
+                                    <X className="w-3.5 h-3.5" /> Clear
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      clearLyricTimestampsFromIndex(
+                                        project.id,
+                                        index,
+                                      )
+                                    }
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full transition-all shadow-sm"
+                                  >
+                                    <ListX className="w-3.5 h-3.5" /> Clear
+                                    Below
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </div>
                         )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </main>
 
-      {/* Bottom Bar Controls */}
-      {isReady && (
-        <footer className="shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.2)] z-10">
-          {/* Touch Controls (Mobile & Desktop) */}
-          <div className="flex justify-center gap-4 mb-4">
-            <button
-              onClick={handleArrowUp}
-              className="p-3 bg-gray-200 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300 active:bg-gray-300 dark:active:bg-gray-700"
-              aria-label="Previous Line (Up)"
-            >
-              <ChevronUp className="w-6 h-6" />
-            </button>
-            <button
-              onClick={handleArrowDown}
-              className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 active:bg-blue-200 dark:active:bg-blue-900/50 flex-1 flex justify-center"
-              aria-label="Next Line (Down)"
-            >
-              <ChevronDown className="w-6 h-6" />
-            </button>
-            <div className="flex gap-2">
-              <button
-                onClick={handleArrowLeft}
-                className="p-3 bg-gray-200 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300 active:bg-gray-300 dark:active:bg-gray-700"
-                aria-label="Nudge backward (Left)"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <button
-                onClick={handleArrowRight}
-                className="p-3 bg-gray-200 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-300 active:bg-gray-300 dark:active:bg-gray-700"
-                aria-label="Nudge forward (Right)"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-
-          <div className="max-w-4xl mx-auto flex flex-col gap-4">
-            {/* Seek Bar */}
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-mono text-gray-500 w-12 text-right">
-                {formatTime(currentTime)}
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={duration || 100}
-                step={0.01}
-                value={currentTime}
-                onChange={handleSeek}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-                aria-label="Seek time"
-              />
-              <span className="text-xs font-mono text-gray-500 w-12">
-                {formatTime(duration)}
-              </span>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="font-mono text-xl text-gray-700 dark:text-gray-300 w-24">
-                {formatTime(currentTime)}
-              </div>
-
+      {/* Modern Floating Bottom Player */}
+      {(isReady || youtubeId) && (
+        <footer className="fixed bottom-6 inset-x-4 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-3xl z-30">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl rounded-3xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] border border-white/50 dark:border-slate-700/50 p-4 md:p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-4 w-full">
+              {/* Play/Pause */}
               <button
                 onClick={togglePlayPause}
-                className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-500/50 shrink-0"
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30 shrink-0 border border-blue-400/20"
               >
                 {isPlaying ? (
                   <Pause className="w-6 h-6 fill-current" />
@@ -621,8 +778,82 @@ export default function Synchronizer() {
                 )}
               </button>
 
-              <div className="w-24 text-right text-sm text-gray-500 dark:text-gray-400">
-                Line {activeLineIndex + 1}/{project.lyrics.length}
+              {/* Progress */}
+              <div className="flex-1 flex flex-col gap-2">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+                    {formatTime(currentTime)}
+                  </span>
+                  <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500">
+                    {formatTime(duration)}
+                  </span>
+                </div>
+                <div className="relative group flex items-center h-4 cursor-pointer">
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 100}
+                    step={0.01}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="absolute z-20 w-full opacity-0 cursor-pointer"
+                  />
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full transition-all duration-75"
+                      style={{
+                        width: `${(currentTime / Math.max(duration, 1)) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Line Counter */}
+              <div className="hidden md:flex flex-col items-end shrink-0 ml-4 border-l border-slate-200 dark:border-slate-700 pl-6">
+                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                  Position
+                </div>
+                <div className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                  {activeLineIndex + 1}
+                  <span className="text-slate-400">
+                    /{project.lyrics.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sync Controls (Pills) */}
+            <div className="flex justify-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-700/50">
+              <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-2xl">
+                <button
+                  onClick={handleArrowLeft}
+                  className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
+                  title="Nudge Backward (-0.1s)"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleArrowUp}
+                  className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
+                  title="Previous Line"
+                >
+                  <ChevronUp className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleArrowDown}
+                  className="px-6 py-2.5 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600 shadow-sm transition-all mx-1"
+                  title="Sync Line (Down)"
+                >
+                  <ChevronDown className="w-5 h-5 inline-block mr-1" /> SYNC
+                </button>
+                <button
+                  onClick={handleArrowRight}
+                  className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
+                  title="Nudge Forward (+0.1s)"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </div>
             </div>
           </div>

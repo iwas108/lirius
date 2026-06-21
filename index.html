@@ -1,119 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Essential Meta Tags -->
     <title>Lirius - Web-based Lyric Timing Synchronizer</title>
-    <meta name="description" content="Lirius is a powerful web-based lyric timing synchronizer app. Easily synchronize plain-text lyrics with .flac audio files and output valid .srt or .txt files for your music. Features Musixmatch-like interface, two-way sync, keyboard shortcuts, and a local dashboard.">
-    <meta name="keywords" content="lyric synchronizer, lyric timing, srt export, txt export, musixmatch formatter, flac sync, lyric timing app, web lyric sync, lirius">
-    <meta name="author" content="iwas108">
+    <meta
+      name="description"
+      content="Lirius is a powerful web-based lyric timing synchronizer app. Easily synchronize plain-text lyrics with .flac audio files and output valid .srt or .txt files for your music. Features Musixmatch-like interface, two-way sync, keyboard shortcuts, and a local dashboard."
+    />
+    <meta
+      name="keywords"
+      content="lyric synchronizer, lyric timing, srt export, txt export, musixmatch formatter, flac sync, lyric timing app, web lyric sync, lirius"
+    />
+    <meta name="author" content="iwas108" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://iwas108.github.io/lirius/">
-    <meta property="og:title" content="Lirius - Web-based Lyric Timing Synchronizer">
-    <meta property="og:description" content="Synchronize your plain-text lyrics with .flac audio files effortlessly. Export valid .srt or .txt files with our robust web-based tool.">
-    <meta property="og:image" content="https://iwas108.github.io/lirius/dist/img/og-image.png">
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://iwas108.github.io/lirius/" />
+    <meta
+      property="og:title"
+      content="Lirius - Web-based Lyric Timing Synchronizer"
+    />
+    <meta
+      property="og:description"
+      content="Synchronize your plain-text lyrics with .flac audio files effortlessly. Export valid .srt or .txt files with our robust web-based tool."
+    />
+    <meta
+      property="og:image"
+      content="https://iwas108.github.io/lirius/dist/img/og-image.png"
+    />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://iwas108.github.io/lirius/">
-    <meta property="twitter:title" content="Lirius - Web-based Lyric Timing Synchronizer">
-    <meta property="twitter:description" content="Synchronize your plain-text lyrics with .flac audio files effortlessly. Export valid .srt or .txt files with our robust web-based tool.">
-    <meta property="twitter:image" content="https://iwas108.github.io/lirius/dist/img/og-image.png">
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://iwas108.github.io/lirius/" />
+    <meta
+      property="twitter:title"
+      content="Lirius - Web-based Lyric Timing Synchronizer"
+    />
+    <meta
+      property="twitter:description"
+      content="Synchronize your plain-text lyrics with .flac audio files effortlessly. Export valid .srt or .txt files with our robust web-based tool."
+    />
+    <meta
+      property="twitter:image"
+      content="https://iwas108.github.io/lirius/dist/img/og-image.png"
+    />
 
-    <style>
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            line-height: 1.6;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            color: #333;
-            background-color: #f9fafb;
-        }
-        @media (prefers-color-scheme: dark) {
-            body {
-                background-color: #111827;
-                color: #e5e7eb;
-            }
-            a { color: #60a5fa; }
-            code { background: #374151; }
-        }
-        h1, h2 { color: #111827; }
-        @media (prefers-color-scheme: dark) {
-            h1, h2 { color: #f9fafb; }
-        }
-        a {
-            color: #2563eb;
-            text-decoration: none;
-        }
-        a:hover { text-decoration: underline; }
-        .cta-button {
-            display: inline-block;
-            background-color: #2563eb;
-            color: white !important;
-            padding: 1rem 2rem;
-            border-radius: 0.5rem;
-            font-weight: bold;
-            font-size: 1.25rem;
-            margin: 2rem 0;
-            text-align: center;
-            transition: background-color 0.2s;
-        }
-        .cta-button:hover {
-            background-color: #1d4ed8;
-            text-decoration: none;
-        }
-        code {
-            background: #f3f4f6;
-            padding: 0.2rem 0.4rem;
-            border-radius: 0.25rem;
-            font-family: monospace;
-        }
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        @media (prefers-color-scheme: dark) {
-            .container {
-                background: #1f2937;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Lirius</h1>
-        <p>Lirius is a complete web-based lyric timing synchronizer app. It helps users synchronize plain-text lyrics with <code>.flac</code> audio files, and output a valid <code>.srt</code> or <code>.txt</code> file.</p>
+    <!-- Compiled Tailwind CSS -->
+    <link rel="stylesheet" href="./dist/assets/index.css" />
+  </head>
+  <body
+    class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased min-h-screen flex items-center justify-center p-6"
+  >
+    <div
+      class="max-w-3xl w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 md:p-12"
+    >
+      <div class="text-center mb-10">
+        <h1
+          class="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-4"
+        >
+          Lirius
+        </h1>
+        <p class="text-lg text-gray-600 dark:text-gray-400">
+          A complete web-based lyric timing synchronizer app. Synchronize
+          plain-text lyrics with
+          <code
+            class="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm text-pink-600 dark:text-pink-400 font-mono"
+            >.flac</code
+          >
+          audio files, and output a valid
+          <code
+            class="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm text-blue-600 dark:text-blue-400 font-mono"
+            >.srt</code
+          >
+          or
+          <code
+            class="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm text-blue-600 dark:text-blue-400 font-mono"
+            >.txt</code
+          >
+          file.
+        </p>
 
-        <div style="text-align: center;">
-            <a href="/lirius/dist/" class="cta-button">Launch Lirius App</a>
-        </div>
+        <a
+          href="/lirius/dist/"
+          class="inline-block mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-transform hover:scale-105 active:scale-95 shadow-md shadow-blue-500/30"
+        >
+          Launch Lirius App
+        </a>
+      </div>
 
-        <h2>Features</h2>
-        <ul>
-            <li><strong>Musixmatch-like Interface:</strong> View a vertical list of lyrics centered on the screen, auto-scrolling with the current line. Includes smart lyric input modal enforcing Musixmatch guidelines, an auto-fix utility, and strict structural tag controls.</li>
-            <li><strong>Two-way Synchronization:</strong> Click the audio seek bar to automatically update the active lyric line and auto-scroll, or click a synced lyric line to update the audio seek bar to that timestamp.</li>
-            <li><strong>Keyboard Shortcuts:</strong> Fast synchronization controls using keyboard arrows (Down to lock line/next, Up to reset/previous, Left/Right to fine-tune timing).</li>
-            <li><strong>Responsive & Touch Controls:</strong> Designed mobile-first with smart dark/light theme options using Tailwind CSS. On-screen touch controls available for easy lyric synchronization on both mobile and desktop.</li>
-            <li><strong>Local Dashboard:</strong> Resume incomplete projects straight from your browser. Data is persisted to local storage to manage multiple works (CRUD operations). Due to browser security constraints, you must re-select your original <code>.flac</code> file to resume.</li>
-            <li><strong>Advanced SRT & TXT Export:</strong> Generates a correctly formatted <code>.srt</code> file for your synchronized lyrics (excluding structural tags), or <code>.txt</code> files (including Musixmatch structural tags). Supports advanced handling of <code>#INSTRUMENTAL</code> tags.</li>
-        </ul>
+      <div class="space-y-8">
+        <section>
+          <h2
+            class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="text-blue-500"
+            >
+              <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+              />
+            </svg>
+            Features
+          </h2>
+          <ul class="space-y-3 text-gray-600 dark:text-gray-400 list-disc pl-5">
+            <li>
+              <strong class="text-gray-800 dark:text-gray-200"
+                >Musixmatch-like Interface:</strong
+              >
+              View a vertical list of lyrics centered on the screen,
+              auto-scrolling with the current line. Includes smart lyric input
+              modal enforcing Musixmatch guidelines, an auto-fix utility, and
+              strict structural tag controls.
+            </li>
+            <li>
+              <strong class="text-gray-800 dark:text-gray-200"
+                >Two-way Synchronization:</strong
+              >
+              Click the audio seek bar to automatically update the active lyric
+              line and auto-scroll, or click a synced lyric line to update the
+              audio seek bar to that timestamp.
+            </li>
+            <li>
+              <strong class="text-gray-800 dark:text-gray-200"
+                >Keyboard Shortcuts:</strong
+              >
+              Fast synchronization controls using keyboard arrows (Down to lock
+              line/next, Up to reset/previous, Left/Right to fine-tune timing).
+            </li>
+            <li>
+              <strong class="text-gray-800 dark:text-gray-200"
+                >Responsive & Touch Controls:</strong
+              >
+              Designed mobile-first with smart dark/light theme options using
+              Tailwind CSS. On-screen touch controls available for easy lyric
+              synchronization on both mobile and desktop.
+            </li>
+            <li>
+              <strong class="text-gray-800 dark:text-gray-200"
+                >Local Dashboard:</strong
+              >
+              Resume incomplete projects straight from your browser. Data is
+              persisted to local IndexedDB to manage multiple works (CRUD
+              operations). Due to browser security constraints, you must
+              re-select your original <code>.flac</code> file to resume.
+            </li>
+            <li>
+              <strong class="text-gray-800 dark:text-gray-200"
+                >Advanced SRT & TXT Export:</strong
+              >
+              Generates a correctly formatted <code>.srt</code> file for your
+              synchronized lyrics (excluding structural tags), or
+              <code>.txt</code> files (including Musixmatch structural tags).
+              Supports advanced handling of <code>#INSTRUMENTAL</code> tags.
+            </li>
+          </ul>
+        </section>
 
-        <h2>Technology Stack</h2>
-        <ul>
-            <li><strong>Frontend:</strong> React, Vite, TypeScript</li>
-            <li><strong>Styling:</strong> Tailwind CSS, Lucide React (Icons)</li>
-            <li><strong>State Management:</strong> Zustand (with persist middleware)</li>
-            <li><strong>Testing:</strong> Vitest</li>
-        </ul>
+        <section>
+          <h2
+            class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="text-emerald-500"
+            >
+              <polyline points="16 18 22 12 16 6" />
+              <polyline points="8 6 2 12 8 18" />
+            </svg>
+            Technology Stack
+          </h2>
+          <ul class="flex flex-wrap gap-2 text-sm">
+            <li
+              class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full border border-gray-200 dark:border-gray-600"
+            >
+              React
+            </li>
+            <li
+              class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full border border-gray-200 dark:border-gray-600"
+            >
+              Vite
+            </li>
+            <li
+              class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full border border-gray-200 dark:border-gray-600"
+            >
+              TypeScript
+            </li>
+            <li
+              class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full border border-gray-200 dark:border-gray-600"
+            >
+              Tailwind CSS
+            </li>
+            <li
+              class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full border border-gray-200 dark:border-gray-600"
+            >
+              Zustand (IndexedDB)
+            </li>
+          </ul>
+        </section>
+      </div>
     </div>
-</body>
+  </body>
 </html>

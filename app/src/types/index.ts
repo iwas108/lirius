@@ -9,6 +9,7 @@ export interface Project {
   name: string; // project name or track title
   createdAt: number;
   lyrics: LyricLine[];
+  youtubeUrl?: string;
 }
 
 export interface AppState {
