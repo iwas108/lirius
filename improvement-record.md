@@ -73,4 +73,10 @@ This log records features, fixes, and architectural adjustments completed on the
 - **Visual Balance Alignment**: Added a matching invisible spacer to the right of the lyric text for lines containing the indicator, ensuring that the lyric line text remains perfectly centered in the layout.
 - **Instrumental Progress Alignment**: Excluded the structural `#INSTRUMENTAL` tag itself from dashboard progress calculations, resolving a discrepancy where projects with instrumentals could never reach 100% sync status.
 
+### 12. Lyric Editor Drag-and-Drop Reordering & Contextual Tag Insertion
+
+- **Lyric Line Reordering**: Implemented smooth HTML5 drag-and-drop reordering inside `CreateProjectModal.tsx`. Users can grab the `GripVertical` handle on any row to drag and insert it at a new position. The list updates in real-time, providing immediate visual feedback by dimming and scaling the dragged row. Text selection within input fields is completely preserved because only the grip handle is marked as draggable.
+- **Contextual Quick Insert**: Modified the "Quick Insert" buttons (`#INTRO`, `#VERSE`, etc.) and the "Add Instrumental Block" button to insert tags directly above the currently active (focused) lyric line instead of appending them to the bottom of the list. The new input field automatically gains focus post-insertion.
+
+
 

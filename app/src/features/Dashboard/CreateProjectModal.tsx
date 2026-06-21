@@ -34,6 +34,8 @@ export default function CreateProjectModal({
   const [lines, setLines] = useState<LyricLine[]>([
     { id: crypto.randomUUID(), text: '', timestamp: null },
   ]);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [activeLineId, setActiveLineId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const liriusInputRef = useRef<HTMLInputElement>(null);
@@ -167,29 +169,46 @@ export default function CreateProjectModal({
 
   const insertTag = (tag: string) => {
     const newLines = [...lines];
-    // Add tag at the bottom
-    newLines.push({ id: crypto.randomUUID(), text: tag, timestamp: null });
+    const activeIndex = activeLineId
+      ? lines.findIndex((l) => l.id === activeLineId)
+      : -1;
+    const insertIndex = activeIndex !== -1 ? activeIndex : newLines.length;
+    newLines.splice(insertIndex, 0, {
+      id: crypto.randomUUID(),
+      text: tag,
+      timestamp: null,
+    });
     setLines(newLines);
     setTimeout(() => {
       const inputs = document.querySelectorAll('.lyric-line-input');
-      if (inputs.length > 0) {
-        (inputs[inputs.length - 1] as HTMLInputElement).focus();
+      if (inputs[insertIndex]) {
+        (inputs[insertIndex] as HTMLInputElement).focus();
       }
     }, 0);
   };
 
   const insertInstrumentalBlock = () => {
     const newLines = [...lines];
-    newLines.push({
-      id: crypto.randomUUID(),
-      text: '#INSTRUMENTAL',
-      timestamp: null,
-    });
-    newLines.push({ id: crypto.randomUUID(), text: '🎵', timestamp: null });
+    const activeIndex = activeLineId
+      ? lines.findIndex((l) => l.id === activeLineId)
+      : -1;
+    const insertIndex = activeIndex !== -1 ? activeIndex : newLines.length;
+    newLines.splice(
+      insertIndex,
+      0,
+      {
+        id: crypto.randomUUID(),
+        text: '#INSTRUMENTAL',
+        timestamp: null,
+      },
+      { id: crypto.randomUUID(), text: '🎵', timestamp: null },
+    );
     setLines(newLines);
     setTimeout(() => {
-      const container = document.getElementById('modal-scroll-container');
-      if (container) container.scrollTop = container.scrollHeight;
+      const inputs = document.querySelectorAll('.lyric-line-input');
+      if (inputs[insertIndex]) {
+        (inputs[insertIndex] as HTMLInputElement).focus();
+      }
     }, 0);
   };
 
@@ -469,10 +488,33 @@ export default function CreateProjectModal({
                 return (
                   <div
                     key={line.id}
-                    className="group flex items-center gap-2 relative"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (draggedIndex === null || draggedIndex === index)
+                        return;
+                      const newLines = [...lines];
+                      const draggedItem = newLines[draggedIndex];
+                      newLines.splice(draggedIndex, 1);
+                      newLines.splice(index, 0, draggedItem);
+                      setLines(newLines);
+                      setDraggedIndex(index);
+                    }}
+                    className={`group flex items-center gap-2 relative transition-all duration-150 ${
+                      draggedIndex === index ? 'opacity-30 scale-95' : ''
+                    }`}
                   >
-                    <div className="w-6 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <GripVertical className="w-4 h-4 text-gray-400 cursor-grab active:cursor-grabbing" />
+                    <div
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', index.toString());
+                        setDraggedIndex(index);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedIndex(null);
+                      }}
+                      className="w-6 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+                    >
+                      <GripVertical className="w-4 h-4 text-gray-400" />
                     </div>
 
                     <div className="flex-1 relative">
@@ -484,6 +526,7 @@ export default function CreateProjectModal({
                         }
                         onPaste={(e) => handlePaste(e, index)}
                         onKeyDown={(e) => handleKeyDown(e, index)}
+                        onFocus={() => setActiveLineId(line.id)}
                         placeholder="Type or paste lyrics here..."
                         className={`lyric-line-input w-full px-4 py-2.5 rounded-xl border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
                           isStructureTag
