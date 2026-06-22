@@ -99,3 +99,12 @@ This log records features, fixes, and architectural adjustments completed on the
 - **Instrumental Controls**: Added timing info display, `Clear`, and `Clear Below` buttons to active instrumental lines (`🎵 INSTRUMENTAL 🎵`), matching regular lyric lines while keeping direct text editing disabled.
 - **Click-to-Select Unsynced Lines**: Updated the lyric line click handler and styles to allow clicking and selecting unsynced lines (lines without a timestamp) as the active line.
 - **Sync Navigation Logic**: Ensured the Down button syncs the line below the current active line (instead of the last line synced) by allowing the active line index to be positioned on any syncable line.
+
+### 17. Sync Page Layout Refactoring (Field-Style)
+
+- **Consistent Field Layout**: Replaced the center-aligned, absolute-centered, and distance-faded lyric synchronization interface with a list of stacked input fields/rows, aligning the design with the project editing modal.
+- **Structure Tags & Lyric Line Rendering**:
+  - Non-syncable structure tags are displayed as centered monospace dashed blocks, highlighting in blue when active.
+  - Syncable lines (lyrics and instrumental blocks) are rendered as rounded cards with borders and shadows. Past lines have slightly reduced opacity (70%) and a gray background, while future lines are fully visible.
+- **Inline Timestamp Badges**: Timestamps are displayed as badges on the right end of the syncable line cards, giving the user immediate visual feedback on which parts of the project are synchronized.
+- **Expandable Controls**: When a line is active, the controls (Clear, Clear Below, and Edit Text) expand in a clean panel below the line's text inside the card.

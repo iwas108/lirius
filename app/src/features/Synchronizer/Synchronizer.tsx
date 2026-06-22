@@ -601,7 +601,7 @@ export default function Synchronizer() {
               className="flex-1 overflow-y-auto px-4 scroll-smooth hide-scrollbar z-10"
               style={{ paddingBottom: '30vh', paddingTop: '2vh' }}
             >
-              <div className="max-w-4xl mx-auto flex flex-col gap-6 items-center">
+              <div className="max-w-2xl mx-auto space-y-2 w-full">
                 {project.lyrics.map((line, index) => {
                   const isActive = index === activeLineIndex;
                   const isStructureTag = VALID_STRUCTURE_TAGS.includes(
@@ -615,13 +615,13 @@ export default function Synchronizer() {
                       <div
                         key={line.id}
                         ref={isActive ? activeLineRef : null}
-                        className="flex items-center w-full max-w-lg my-12 opacity-80"
+                        className={`w-full px-4 py-2.5 rounded-xl border border-dashed text-center font-mono text-xs uppercase tracking-widest transition-all ${
+                          isActive
+                            ? 'border-blue-500 dark:border-blue-400 bg-blue-50/20 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400 ring-2 ring-blue-500/20'
+                            : 'border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500'
+                        }`}
                       >
-                        <div className="h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent flex-1" />
-                        <span className="px-6 text-xs font-bold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500">
-                          {line.text.replace(/^#/, '')}
-                        </span>
-                        <div className="h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-600 to-transparent flex-1" />
+                        {line.text.replace(/^#/, '')}
                       </div>
                     );
                   }
@@ -629,30 +629,22 @@ export default function Synchronizer() {
                   const isPast = index < activeLineIndex;
                   const hasTimestamp = line.timestamp !== null;
 
-                  // Opacity mapping based on distance from active line
-                  const distance = Math.abs(index - activeLineIndex);
-                  let opacityClass = 'opacity-100';
-                  if (!isActive) {
-                    if (distance === 1) opacityClass = 'opacity-60';
-                    else if (distance === 2) opacityClass = 'opacity-40';
-                    else if (distance === 3) opacityClass = 'opacity-20';
-                    else opacityClass = 'opacity-10';
-                  }
-
                   return (
                     <div
                       key={line.id}
                       ref={isActive ? activeLineRef : null}
                       onClick={() => handleLyricClick(index)}
-                      className={`transition-all duration-500 ease-out transform text-center px-4 w-full ${isLineSyncable(index) ? 'cursor-pointer' : ''} ${opacityClass} ${
+                      className={`group w-full rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
                         isActive
-                          ? 'py-8 scale-100'
-                          : 'py-2 scale-90 hover:scale-95'
+                          ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-500/20 bg-blue-50/30 dark:bg-blue-950/20 shadow-md scale-[1.01]'
+                          : isPast
+                            ? 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 opacity-70 hover:opacity-100'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
                       }`}
                     >
                       {editingLineId === line.id ? (
                         <div
-                          className="py-2 w-full max-w-xl mx-auto"
+                          className="py-1 w-full max-w-xl mx-auto"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <input
@@ -667,46 +659,36 @@ export default function Synchronizer() {
                                 setEditingLineId(null);
                               }
                             }}
-                            className="w-full px-4 py-2 text-center text-xl md:text-2xl font-bold bg-white dark:bg-slate-800 border-2 border-blue-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white shadow-md"
+                            className="w-full px-4 py-2 text-center text-lg font-bold bg-white dark:bg-slate-800 border-2 border-blue-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white shadow-sm"
                             autoFocus
                           />
                         </div>
                       ) : (
-                        <div
-                          className={`font-extrabold tracking-tight py-2 flex items-center justify-center gap-3 ${
-                            isActive ? 'pb-3' : ''
-                          }`}
-                          onDoubleClick={(e) => {
-                            if (
-                              line.id !== 'start-marker' &&
-                              line.id !== 'end-marker' &&
-                              !isStructureTag
-                            ) {
-                              e.stopPropagation();
-                              setEditingLineId(line.id);
-                              setEditingText(line.text);
-                            }
-                          }}
-                        >
-                          {isLineUnsynced(index) && (
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {isLineUnsynced(index) && (
+                              <span
+                                className="w-2.5 h-2.5 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
+                                title="Unsynchronized line"
+                              />
+                            )}
                             <span
-                              className="w-2.5 h-2.5 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
-                              title="Unsynchronized line"
-                            />
-                          )}
-                          <span
-                            className={
-                              isActive
-                                ? 'text-4xl md:text-5xl lg:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 drop-shadow-sm'
-                                : isPast
-                                  ? 'text-xl md:text-3xl text-slate-400 dark:text-slate-600'
-                                  : 'text-2xl md:text-4xl text-slate-700 dark:text-slate-300'
-                            }
-                          >
-                            {isInstrumental ? '🎵 INSTRUMENTAL 🎵' : line.text}
-                          </span>
-                          {isLineUnsynced(index) && (
-                            <span className="w-2.5 h-2.5 shrink-0 opacity-0 pointer-events-none" />
+                              className={`font-bold transition-colors truncate ${
+                                isActive
+                                  ? 'text-base md:text-lg text-blue-600 dark:text-blue-400'
+                                  : isPast
+                                    ? 'text-sm md:text-base text-slate-400 dark:text-slate-600'
+                                    : 'text-sm md:text-base text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              {isInstrumental ? '🎵 INSTRUMENTAL 🎵' : line.text}
+                            </span>
+                          </div>
+
+                          {hasTimestamp && (
+                            <span className="shrink-0 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                              {formatTime(line.timestamp as number)}
+                            </span>
                           )}
                         </div>
                       )}
@@ -716,7 +698,7 @@ export default function Synchronizer() {
                         line.id !== 'end-marker' &&
                         (!isStructureTag || isInstrumental) && (
                           <div
-                            className="flex flex-col items-center mt-3"
+                            className="flex flex-col items-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 w-full"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {hasTimestamp && (
