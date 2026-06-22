@@ -32,6 +32,7 @@ export default function CreateProjectModal({
 }: CreateProjectModalProps) {
   const [projectName, setProjectName] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [musicStyle, setMusicStyle] = useState('');
   const [lines, setLines] = useState<LyricLine[]>([
     { id: crypto.randomUUID(), text: '', timestamp: null },
   ]);
@@ -54,6 +55,7 @@ export default function CreateProjectModal({
         if (project) {
           setProjectName(project.name);
           setYoutubeUrl(project.youtubeUrl || '');
+          setMusicStyle(project.musicStyle || '');
           // Filter out start/end markers for editing
           const editableLines = project.lyrics.filter(
             (l) => l.id !== 'start-marker' && l.id !== 'end-marker',
@@ -67,6 +69,7 @@ export default function CreateProjectModal({
       } else {
         setProjectName('');
         setYoutubeUrl('');
+        setMusicStyle('');
         setLines([{ id: crypto.randomUUID(), text: '', timestamp: null }]);
       }
     }
@@ -296,6 +299,8 @@ export default function CreateProjectModal({
             createProject({
               name: parsed.name,
               lyrics: parsed.lyrics,
+              youtubeUrl: typeof parsed.youtubeUrl === 'string' ? parsed.youtubeUrl : undefined,
+              musicStyle: typeof parsed.musicStyle === 'string' ? parsed.musicStyle : undefined,
             });
             showToast('Project imported successfully!', 'success');
             onClose();
@@ -337,12 +342,14 @@ export default function CreateProjectModal({
         name: projectName.trim(),
         lyrics: finalLyrics,
         youtubeUrl: youtubeUrl.trim() || undefined,
+        musicStyle: musicStyle.trim() || undefined,
       });
     } else {
       createProject({
         name: projectName.trim(),
         lyrics: finalLyrics,
         youtubeUrl: youtubeUrl.trim() || undefined,
+        musicStyle: musicStyle.trim() || undefined,
       });
     }
 
@@ -402,6 +409,19 @@ export default function CreateProjectModal({
                 value={youtubeUrl}
                 onChange={(e) => setYoutubeUrl(e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Music Style (Optional)
+              </label>
+              <input
+                type="text"
+                value={musicStyle}
+                onChange={(e) => setMusicStyle(e.target.value)}
+                placeholder="Pop, Rock, Electronic, etc."
                 className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white transition-all"
               />
             </div>

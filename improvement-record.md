@@ -121,3 +121,18 @@ This log records features, fixes, and architectural adjustments completed on the
 - **Hover Active Actions & Clean Detail**: Removed the duplicate/redundant large timing badge underneath the active line. The actions container (holding the `Clear` and `Clear Below` buttons) has transition-opacity properties (`opacity-0 group-hover:opacity-100`) to only display when the user hovers over the active line.
 - **Slim Single-Row Player**: Redesigned the sticky bottom controller into a ultra-slim, single-row layout on desktop. It houses the play/pause button, time stamps, sync controls (ChevronLeft, ChevronUp, SYNC button, ChevronRight), progress bar, and position counter horizontally, saving significant vertical screen space.
 - **Smart Scroll Assist**: Implemented a prompter-style viewport check. If the active line shifts below the 70% height marker of the viewport, the list smoothly scrolls down by the offset. If the active line goes entirely out of view, it smoothly snaps back using the `nearest` block position fallback.
+
+### 20. Music Style Metadata & File Import/Export Support
+
+- **Music Style Optional Field**: Added a new `musicStyle?: string` field to the `Project` interface definitions.
+- **Project Create/Edit Sidebar**: Rendered an optional "Music Style" input field in the settings panel of `CreateProjectModal.tsx` allowing users to declare genre or style tags (e.g., Pop, Rock, Electronic) for new and existing projects.
+- **LIRIUS Import & Export**:
+  - Exporting a project in `.lirius` format automatically embeds `musicStyle` metadata since it serializes the entire project object via `JSON.stringify`.
+  - Importing a `.lirius` file in `CreateProjectModal.tsx` now extracts both `musicStyle` and `youtubeUrl` from the parsed JSON payload and creates/restores the project state correctly.
+- **Dashboard Badge Display**: Project cards/rows on the dashboard table render a style tag badge next to their track titles when a project contains a declared `musicStyle`.
+
+### 21. Dashboard Edit Project Actions
+
+- **Inline Edit Action**: Added an "Edit" button next to the "Open" button on each project row in the dashboard table.
+- **Modal Hookup**: Enabled launching the `CreateProjectModal` in edit mode (passing the corresponding `editProjectId`) directly from the dashboard row, allowing users to edit lyrics, youtubeUrl, or musicStyle without opening the project first.
+- **Lucide Edit3 Icon**: Imported and rendered the Lucide `Edit3` icon inside the inline edit button on the table.

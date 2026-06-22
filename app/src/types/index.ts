@@ -10,6 +10,7 @@ export interface Project {
   createdAt: number;
   lyrics: LyricLine[];
   youtubeUrl?: string;
+  musicStyle?: string; // genre/style tags
 }
 
 export interface AppState {

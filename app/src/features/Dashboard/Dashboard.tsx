@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Plus,
   Play,
+  Edit3,
 } from 'lucide-react';
 
 type SortField = 'name' | 'createdAt' | 'progress';
@@ -66,6 +67,7 @@ const getSyncableLyricsCount = (
 export default function Dashboard() {
   const { projects, deleteProject, setActiveProjectId } = useAppStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editProjectId, setEditProjectId] = useState<string | undefined>(undefined);
 
   // Table State
   const [searchQuery, setSearchQuery] = useState('');
@@ -169,7 +171,11 @@ export default function Dashboard() {
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8 bg-gray-50/50 dark:bg-gray-900/50 min-h-screen">
       <CreateProjectModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditProjectId(undefined);
+        }}
+        editProjectId={editProjectId}
       />
 
       {/* Header & Stats */}
@@ -334,8 +340,15 @@ export default function Dashboard() {
                       className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group"
                     >
                       <td className="px-6 py-4">
-                        <div className="font-semibold text-gray-900 dark:text-white text-base">
-                          {project.name}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-gray-900 dark:text-white text-base">
+                            {project.name}
+                          </span>
+                          {project.musicStyle && (
+                            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-800/40">
+                              {project.musicStyle}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           ID: {project.id.slice(0, 8)}
@@ -371,6 +384,15 @@ export default function Dashboard() {
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <Play className="w-4 h-4" /> Open
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditProjectId(project.id);
+                              setIsModalOpen(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500"
+                          >
+                            <Edit3 className="w-4 h-4" /> Edit
                           </button>
                           <button
                             onClick={() => deleteProject(project.id)}
