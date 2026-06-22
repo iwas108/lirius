@@ -231,7 +231,7 @@ export default function CreateProjectModal({
         return line;
       }
 
-      const cleanedText = line.text.replace(/[^A-Za-z\-()"1-9,\s]/g, '');
+      const cleanedText = line.text.replace(/[^A-Za-z1-9\-()'",\s🎵]/gu, '');
       if (cleanedText !== line.text) {
         fixedCount++;
       }

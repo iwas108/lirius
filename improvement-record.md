@@ -136,3 +136,8 @@ This log records features, fixes, and architectural adjustments completed on the
 - **Inline Edit Action**: Added an "Edit" button next to the "Open" button on each project row in the dashboard table.
 - **Modal Hookup**: Enabled launching the `CreateProjectModal` in edit mode (passing the corresponding `editProjectId`) directly from the dashboard row, allowing users to edit lyrics, youtubeUrl, or musicStyle without opening the project first.
 - **Lucide Edit3 Icon**: Imported and rendered the Lucide `Edit3` icon inside the inline edit button on the table.
+
+### 22. Allow Single Quote Character in Auto Fix/Validation
+
+- **Single Quote Allowed**: Updated the "Auto Fix Illegal Characters" replacement regex in `CreateProjectModal.tsx` and the validation regex in `lyricParser.ts` to allow standard single quote/apostrophe characters `'`. This prevents words containing contractions (such as "Don't") from being cleaned or flagged as formatting issues.
+- **Emoji and Digit Alignment**: Aligned the cleanup regex in `CreateProjectModal.tsx` with `validateLyrics` in `lyricParser.ts` by ensuring the musical note emoji `🎵` is correctly preserved under the `/gu` flag during auto-fix, and standard digits 1-9 are matched consistently.

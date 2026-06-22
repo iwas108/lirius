@@ -51,7 +51,7 @@ describe('parseLyrics', () => {
 
 describe('validateLyrics', () => {
   it('should return empty array for valid lyrics', () => {
-    const input = '#VERSE\nHello world\nThis is a test';
+    const input = "#VERSE\nHello world\nThis is a test\nDon't stop believing\n🎵";
     expect(validateLyrics(input)).toEqual([]);
   });
 
