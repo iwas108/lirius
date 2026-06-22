@@ -392,21 +392,12 @@ export default function Synchronizer() {
     setIsExportMenuOpen(false);
   };
 
-  useEffect(() => {
-    if (activeLineRef.current && lyricListRef.current) {
-      activeLineRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    }
-  }, [activeLineIndex]);
-
   if (!project) return null;
 
   return (
-    <div className="flex flex-col h-full absolute inset-0 bg-[#f8fafc] dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-200 dark:selection:bg-blue-900">
-      {/* Header - Glassmorphism */}
-      <header className="absolute top-0 inset-x-0 flex items-center p-4 md:px-8 border-b border-white/20 dark:border-white/5 bg-white/70 dark:bg-[#0f172a]/70 backdrop-blur-xl z-20 transition-all">
+    <div className="flex flex-col h-full absolute inset-0 bg-[#f8fafc] dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-200 dark:selection:bg-blue-900 overflow-hidden">
+      {/* Header - Sticky */}
+      <header className="sticky top-0 inset-x-0 flex items-center p-4 md:px-8 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-20 transition-all shrink-0">
         <button
           onClick={() => setActiveProjectId(null)}
           className="mr-4 p-2.5 rounded-full bg-white dark:bg-slate-800 shadow-sm hover:shadow hover:-translate-x-0.5 border border-slate-200 dark:border-slate-700 transition-all"
@@ -514,7 +505,7 @@ export default function Synchronizer() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 relative flex flex-col pt-24 pb-48">
+      <main className="flex-1 relative flex flex-col py-6 overflow-hidden">
         {/* Background gradient effects */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-blue-500/10 dark:bg-blue-600/10 blur-3xl pointer-events-none rounded-full" />
 
@@ -758,10 +749,10 @@ export default function Synchronizer() {
         )}
       </main>
 
-      {/* Modern Floating Bottom Player */}
+      {/* Sticky Bottom Player */}
       {(isReady || youtubeId) && (
-        <footer className="fixed bottom-6 inset-x-4 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-3xl z-30">
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl rounded-3xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] border border-white/50 dark:border-slate-700/50 p-4 md:p-6 flex flex-col gap-4">
+        <footer className="sticky bottom-0 inset-x-0 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] p-4 md:p-6 z-30 shrink-0">
+          <div className="max-w-3xl mx-auto flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4 w-full">
               {/* Play/Pause */}
               <button

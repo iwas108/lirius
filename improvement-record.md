@@ -108,3 +108,9 @@ This log records features, fixes, and architectural adjustments completed on the
   - Syncable lines (lyrics and instrumental blocks) are rendered as rounded cards with borders and shadows. Past lines have slightly reduced opacity (70%) and a gray background, while future lines are fully visible.
 - **Inline Timestamp Badges**: Timestamps are displayed as badges on the right end of the syncable line cards, giving the user immediate visual feedback on which parts of the project are synchronized.
 - **Expandable Controls**: When a line is active, the controls (Clear, Clear Below, and Edit Text) expand in a clean panel below the line's text inside the card.
+
+### 18. Sync Page Layout & Sticky Player Enhancements
+
+- **Sticky Top Header**: Refactored the top menu/header from absolute positioning to sticky flow (`sticky top-0 shrink-0`), reserving layout space and scrolling cleanly with the page.
+- **Sticky Bottom Player**: Changed the floating playback controller to a full-width bottom bar sticky at the bottom (`sticky bottom-0 shrink-0`), preventing it from floating on top of or covering the lyric lines.
+- **Natural Scrolling**: Removed the automatic centering `scrollIntoView` behavior when the active lyric line index changes, letting the lyric list scroll naturally.
