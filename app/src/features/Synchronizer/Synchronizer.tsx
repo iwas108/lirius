@@ -392,6 +392,36 @@ export default function Synchronizer() {
     setIsExportMenuOpen(false);
   };
 
+  useEffect(() => {
+    if (activeLineRef.current && lyricListRef.current) {
+      const activeEl = activeLineRef.current;
+      const containerEl = lyricListRef.current;
+      
+      const activeRect = activeEl.getBoundingClientRect();
+      const containerRect = containerEl.getBoundingClientRect();
+      
+      const isBelowViewport = activeRect.bottom > containerRect.bottom;
+      const isAboveViewport = activeRect.top < containerRect.top;
+      
+      if (isBelowViewport || isAboveViewport) {
+        activeEl.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        });
+      } else {
+        const activeBottomRelative = activeRect.bottom - containerRect.top;
+        const threshold = containerRect.height * 0.7;
+        if (activeBottomRelative > threshold) {
+          const scrollAmount = activeBottomRelative - threshold;
+          containerEl.scrollBy({
+            top: scrollAmount,
+            behavior: 'smooth',
+          });
+        }
+      }
+    }
+  }, [activeLineIndex]);
+
   if (!project) return null;
 
   return (
@@ -625,6 +655,17 @@ export default function Synchronizer() {
                       key={line.id}
                       ref={isActive ? activeLineRef : null}
                       onClick={() => handleLyricClick(index)}
+                      onDoubleClick={(e) => {
+                        if (
+                          line.id !== 'start-marker' &&
+                          line.id !== 'end-marker' &&
+                          !isStructureTag
+                        ) {
+                          e.stopPropagation();
+                          setEditingLineId(line.id);
+                          setEditingText(line.text);
+                        }
+                      }}
                       className={`group w-full rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
                         isActive
                           ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-500/20 bg-blue-50/30 dark:bg-blue-950/20 shadow-md scale-[1.01]'
@@ -685,58 +726,39 @@ export default function Synchronizer() {
                       )}
 
                       {isActive &&
+                        hasTimestamp &&
                         line.id !== 'start-marker' &&
                         line.id !== 'end-marker' &&
                         (!isStructureTag || isInstrumental) && (
                           <div
-                            className="flex flex-col items-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 w-full"
+                            className="flex flex-col items-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {hasTimestamp && (
-                              <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-mono font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 mb-3">
-                                {formatTime(line.timestamp as number)}
-                              </div>
-                            )}
                             <div className="flex items-center gap-2">
-                              {!isInstrumental && (
-                                <button
-                                  onClick={() => {
-                                    setEditingLineId(line.id);
-                                    setEditingText(line.text);
-                                  }}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-full transition-all shadow-sm"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" /> Edit Text
-                                </button>
-                              )}
-                              {hasTimestamp && (
-                                <>
-                                  <button
-                                    onClick={() =>
-                                      updateLyricTimestamp(
-                                        project.id,
-                                        index,
-                                        null,
-                                      )
-                                    }
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full transition-all shadow-sm"
-                                  >
-                                    <X className="w-3.5 h-3.5" /> Clear
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      clearLyricTimestampsFromIndex(
-                                        project.id,
-                                        index,
-                                      )
-                                    }
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full transition-all shadow-sm"
-                                  >
-                                    <ListX className="w-3.5 h-3.5" /> Clear
-                                    Below
-                                  </button>
-                                </>
-                              )}
+                              <button
+                                onClick={() =>
+                                  updateLyricTimestamp(
+                                    project.id,
+                                    index,
+                                    null,
+                                  )
+                                }
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full transition-all shadow-sm"
+                              >
+                                <X className="w-3.5 h-3.5" /> Clear
+                              </button>
+                              <button
+                                onClick={() =>
+                                  clearLyricTimestampsFromIndex(
+                                    project.id,
+                                    index,
+                                  )
+                                }
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full transition-all shadow-sm"
+                              >
+                                <ListX className="w-3.5 h-3.5" /> Clear
+                                Below
+                              </button>
                             </div>
                           </div>
                         )}
@@ -751,98 +773,84 @@ export default function Synchronizer() {
 
       {/* Sticky Bottom Player */}
       {(isReady || youtubeId) && (
-        <footer className="sticky bottom-0 inset-x-0 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] p-4 md:p-6 z-30 shrink-0">
-          <div className="max-w-3xl mx-auto flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-4 w-full">
-              {/* Play/Pause */}
+        <footer className="sticky bottom-0 inset-x-0 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] p-3 md:py-3.5 md:px-6 z-30 shrink-0">
+          <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 w-full">
+            {/* Left section: Play/Pause & Time */}
+            <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={togglePlayPause}
-                className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30 shrink-0 border border-blue-400/20"
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shadow-md shrink-0 border border-blue-400/20"
               >
                 {isPlaying ? (
-                  <Pause className="w-6 h-6 fill-current" />
+                  <Pause className="w-4 h-4 fill-current" />
                 ) : (
-                  <Play className="w-6 h-6 fill-current ml-1" />
+                  <Play className="w-4 h-4 fill-current ml-0.5" />
                 )}
               </button>
-
-              {/* Progress */}
-              <div className="flex-1 flex flex-col gap-2">
-                <div className="flex justify-between items-center px-1">
-                  <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-                    {formatTime(currentTime)}
-                  </span>
-                  <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500">
-                    {formatTime(duration)}
-                  </span>
-                </div>
-                <div className="relative group flex items-center h-4 cursor-pointer">
-                  <input
-                    type="range"
-                    min={0}
-                    max={duration || 100}
-                    step={0.01}
-                    value={currentTime}
-                    onChange={handleSeek}
-                    className="absolute z-20 w-full opacity-0 cursor-pointer"
-                  />
-                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 rounded-full transition-all duration-75"
-                      style={{
-                        width: `${(currentTime / Math.max(duration, 1)) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Line Counter */}
-              <div className="hidden md:flex flex-col items-end shrink-0 ml-4 border-l border-slate-200 dark:border-slate-700 pl-6">
-                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                  Position
-                </div>
-                <div className="font-mono font-bold text-slate-700 dark:text-slate-300">
-                  {activeLineIndex + 1}
-                  <span className="text-slate-400">
-                    /{project.lyrics.length}
-                  </span>
-                </div>
-              </div>
+              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                {formatTime(currentTime)} <span className="text-slate-400 dark:text-slate-600">/</span> {formatTime(duration)}
+              </span>
             </div>
 
-            {/* Sync Controls (Pills) */}
-            <div className="flex justify-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-700/50">
-              <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-2xl">
-                <button
-                  onClick={handleArrowLeft}
-                  className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
-                  title="Nudge Backward (-0.1s)"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleArrowUp}
-                  className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
-                  title="Previous Line"
-                >
-                  <ChevronUp className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleArrowDown}
-                  className="px-6 py-2.5 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600 shadow-sm transition-all mx-1"
-                  title="Sync Line (Down)"
-                >
-                  <ChevronDown className="w-5 h-5 inline-block mr-1" /> SYNC
-                </button>
-                <button
-                  onClick={handleArrowRight}
-                  className="p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
-                  title="Nudge Forward (+0.1s)"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
+            {/* Middle section: Sync Navigation controls (slimmer) */}
+            <div className="flex bg-slate-100 dark:bg-slate-900/50 p-0.5 rounded-xl shrink-0">
+              <button
+                onClick={handleArrowLeft}
+                className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
+                title="Nudge Backward (-0.1s)"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleArrowUp}
+                className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
+                title="Previous Line"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleArrowDown}
+                className="px-5 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 shadow-sm transition-all mx-1 flex items-center gap-1"
+                title="Sync Line (Down)"
+              >
+                <ChevronDown className="w-4 h-4" /> SYNC
+              </button>
+              <button
+                onClick={handleArrowRight}
+                className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
+                title="Nudge Forward (+0.1s)"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Right section: Progress bar & Line Counter */}
+            <div className="flex-1 flex items-center gap-4 w-full md:w-auto">
+              {/* Progress Slider */}
+              <div className="flex-1 relative group flex items-center h-4 cursor-pointer min-w-[120px]">
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 100}
+                  step={0.01}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="absolute z-20 w-full opacity-0 cursor-pointer"
+                />
+                <div className="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all duration-75"
+                    style={{
+                      width: `${(currentTime / Math.max(duration, 1)) * 100}%`,
+                    }}
+                  />
+                </div>
               </div>
+
+              {/* Position Counter */}
+              <span className="shrink-0 text-xs font-mono font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                {activeLineIndex + 1}/{project.lyrics.length}
+              </span>
             </div>
           </div>
         </footer>

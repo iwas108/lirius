@@ -114,3 +114,10 @@ This log records features, fixes, and architectural adjustments completed on the
 - **Sticky Top Header**: Refactored the top menu/header from absolute positioning to sticky flow (`sticky top-0 shrink-0`), reserving layout space and scrolling cleanly with the page.
 - **Sticky Bottom Player**: Changed the floating playback controller to a full-width bottom bar sticky at the bottom (`sticky bottom-0 shrink-0`), preventing it from floating on top of or covering the lyric lines.
 - **Natural Scrolling**: Removed the automatic centering `scrollIntoView` behavior when the active lyric line index changes, letting the lyric list scroll naturally.
+
+### 19. Sync Page Usability & Slim Bottom Player Refactor
+
+- **Double-Click to Edit**: Removed the "Edit Text" button on active lyric lines and replaced it with a double-click gesture directly on the lyric card container to trigger inline text editing.
+- **Hover Active Actions & Clean Detail**: Removed the duplicate/redundant large timing badge underneath the active line. The actions container (holding the `Clear` and `Clear Below` buttons) has transition-opacity properties (`opacity-0 group-hover:opacity-100`) to only display when the user hovers over the active line.
+- **Slim Single-Row Player**: Redesigned the sticky bottom controller into a ultra-slim, single-row layout on desktop. It houses the play/pause button, time stamps, sync controls (ChevronLeft, ChevronUp, SYNC button, ChevronRight), progress bar, and position counter horizontally, saving significant vertical screen space.
+- **Smart Scroll Assist**: Implemented a prompter-style viewport check. If the active line shifts below the 70% height marker of the viewport, the list smoothly scrolls down by the offset. If the active line goes entirely out of view, it smoothly snaps back using the `nearest` block position fallback.
