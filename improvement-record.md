@@ -141,3 +141,11 @@ This log records features, fixes, and architectural adjustments completed on the
 
 - **Single Quote Allowed**: Updated the "Auto Fix Illegal Characters" replacement regex in `CreateProjectModal.tsx` and the validation regex in `lyricParser.ts` to allow standard single quote/apostrophe characters `'`. This prevents words containing contractions (such as "Don't") from being cleaned or flagged as formatting issues.
 - **Emoji and Digit Alignment**: Aligned the cleanup regex in `CreateProjectModal.tsx` with `validateLyrics` in `lyricParser.ts` by ensuring the musical note emoji `🎵` is correctly preserved under the `/gu` flag during auto-fix, and standard digits 1-9 are matched consistently.
+
+### 23. YouTube Layout, Lyric Character Range, and Seek Bar Synchronization Lag Fixes
+
+- **Audio Seek Bar Lag Fix**: Removed CSS transitions (`transition-all duration-75`) from the bottom audio progress bar. This stops browser animations from fighting rapid React time updates, resulting in instant, smooth synchronization with the audio source.
+- **YouTube Side-by-Side Layout**: Overhauled the lyric synchronizer page layout when a YouTube video is loaded. On desktop viewports (`lg` screens and up), the YouTube video player and the scrollable lyric list are rendered side-by-side instead of stacked, reserving the entire right side of the screen for lyric scrolling.
+- **Load Audio Source Layout**: Restructured the initialization/loader card into a clean two-column grid on desktop (Local FLAC File upload on the left, YouTube URL input on the right) and enabled scrolling (`overflow-y-auto`) when not ready. This prevents the YouTube URL field from being cut off or hidden outside the viewport on shorter displays.
+- **Exclamation and Question Marks Support**: Updated the allowed character set in both `lyricParser.ts` and `CreateProjectModal.tsx` regex to accept `!` and `?` characters without flagging them as illegal or stripping them in the Auto Fix tool. Added corresponding unit tests in `lyricParser.test.ts` to ensure coverage.
+

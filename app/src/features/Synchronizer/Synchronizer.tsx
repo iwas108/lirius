@@ -535,70 +535,77 @@ export default function Synchronizer() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 relative flex flex-col py-6 overflow-hidden">
+      <main className={`flex-1 relative flex flex-col py-6 ${!(isReady || youtubeId) ? 'overflow-y-auto' : 'overflow-hidden'}`}>
         {/* Background gradient effects */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-blue-500/10 dark:bg-blue-600/10 blur-3xl pointer-events-none rounded-full" />
 
         {!(isReady || youtubeId) ? (
           <div className="flex-1 flex items-center justify-center p-6 z-10">
-            <div className="max-w-xl w-full text-center bg-white dark:bg-slate-800 p-10 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700">
-              <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 transform rotate-3">
-                <FileAudio className="w-8 h-8" />
-              </div>
-              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-3">
-                Load Audio Source
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 mb-10 font-medium leading-relaxed">
-                To resume syncing{' '}
-                <strong className="text-slate-700 dark:text-slate-300">
-                  {project.name}
-                </strong>
-                , please provide a local audio file or a YouTube link.
-              </p>
-
-              <AudioInput onFileSelect={handleFileSelect} />
-
-              <div className="relative my-8">
-                <div
-                  className="absolute inset-0 flex items-center"
-                  aria-hidden="true"
-                >
-                  <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
+            <div className="max-w-4xl w-full bg-white dark:bg-slate-800 p-6 md:p-10 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700">
+              <div className="text-center mb-8">
+                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 transform rotate-3">
+                  <FileAudio className="w-6 h-6" />
                 </div>
-                <div className="relative flex justify-center text-sm font-semibold uppercase">
-                  <span className="bg-white dark:bg-slate-800 px-4 text-slate-400 dark:text-slate-500">
-                    OR
-                  </span>
-                </div>
+                <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-2">
+                  Load Audio Source
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 text-sm max-w-lg mx-auto font-medium">
+                  Provide a local FLAC audio file or a YouTube link to sync lyrics for{' '}
+                  <strong className="text-slate-700 dark:text-slate-300">
+                    {project.name}
+                  </strong>
+                  .
+                </p>
               </div>
 
-              <div className="space-y-3 text-left">
-                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400">
-                  YouTube URL
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={inputYoutubeUrl}
-                    onChange={(e) => setInputYoutubeUrl(e.target.value)}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white transition-all"
-                  />
-                  <button
-                    onClick={handleYoutubeSubmit}
-                    className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all"
-                  >
-                    Load
-                  </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+                {/* Option A: Local Audio */}
+                <div className="flex flex-col space-y-4">
+                  <h3 className="text-left text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Option A: Local Audio
+                  </h3>
+                  <AudioInput onFileSelect={handleFileSelect} />
+                </div>
+
+                {/* Option B: YouTube URL */}
+                <div className="flex flex-col justify-between border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-700 pt-6 md:pt-0 md:pl-8">
+                  <div className="space-y-4">
+                    <h3 className="text-left text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      Option B: YouTube URL
+                    </h3>
+                    <p className="text-left text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      Sync lyrics directly with a YouTube video. Provide the video URL below to stream and synchronize timing in real-time.
+                    </p>
+                  </div>
+                  <div className="space-y-3 mt-6 md:mt-0 text-left">
+                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400">
+                      YouTube URL
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={inputYoutubeUrl}
+                        onChange={(e) => setInputYoutubeUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white transition-all"
+                      />
+                      <button
+                        onClick={handleYoutubeSubmit}
+                        className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all shrink-0"
+                      >
+                        Load
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          <>
+          <div className={`flex-1 flex w-full max-w-7xl mx-auto overflow-hidden ${youtubeId ? 'flex-col lg:flex-row gap-6 px-4 md:px-8' : 'flex-col'}`}>
             {youtubeId && (
-              <div className="max-w-xl w-full mx-auto mb-6 px-4 z-20">
-                <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl border border-slate-200/50 dark:border-slate-700/50 bg-black">
+              <div className="w-full lg:w-96 xl:w-[480px] shrink-0 z-20 mb-6 lg:mb-0">
+                <div className="sticky top-0 aspect-video rounded-2xl overflow-hidden shadow-2xl border border-slate-200/50 dark:border-slate-700/50 bg-black">
                   {!isReady && (
                     <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-white z-10">
                       <div className="text-center">
@@ -767,7 +774,7 @@ export default function Synchronizer() {
                 })}
               </div>
             </div>
-          </>
+          </div>
         )}
       </main>
 
@@ -839,7 +846,7 @@ export default function Synchronizer() {
                 />
                 <div className="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-500 rounded-full transition-all duration-75"
+                    className="h-full bg-blue-500 rounded-full"
                     style={{
                       width: `${(currentTime / Math.max(duration, 1)) * 100}%`,
                     }}

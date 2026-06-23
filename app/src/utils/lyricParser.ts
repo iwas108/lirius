@@ -146,8 +146,8 @@ export function validateLyrics(text: string): ValidationWarning[] {
         });
       }
 
-      // Check for illegal characters (only A-Za-z, 1-9, -, (, ), ", ', commas, spaces, and 🎵 are allowed)
-      const illegalMatch = trimmed.match(/[^A-Za-z1-9\-()'",\s🎵]/gu);
+      // Check for illegal characters (only A-Za-z, 1-9, -, (, ), ", ', commas, spaces, 🎵, !, and ? are allowed)
+      const illegalMatch = trimmed.match(/[^A-Za-z1-9\-()'",\s🎵!?]/gu);
       if (illegalMatch) {
         const unique = [...new Set(illegalMatch)];
         warnings.push({

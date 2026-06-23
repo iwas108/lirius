@@ -92,6 +92,15 @@ describe('validateLyrics', () => {
     );
     expect(illegalWarning).toBeDefined();
   });
+
+  it('should allow exclamation and question marks without flagging', () => {
+    const input = 'Is this real? Yes, it is!';
+    const warnings = validateLyrics(input);
+    const illegalWarning = warnings.find((w) =>
+      w.message.includes('illegal character'),
+    );
+    expect(illegalWarning).toBeUndefined();
+  });
 });
 
 describe('autoFixLyrics', () => {
